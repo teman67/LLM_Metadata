@@ -67,6 +67,9 @@ def main():
 
     st.header("Choose How to Ask Your Question")
 
+    # Language Options
+    languages = ["English", "Spanish", "French", "German", "Chinese"]
+
     # Tab for File Upload and Questions
     with st.expander("Upload a File and Ask a Question"):
         uploaded_file = st.file_uploader("Choose a file")
@@ -78,14 +81,15 @@ def main():
             st.success("File uploaded successfully. You can now ask questions about this file.")
         
         user_question_file = st.text_area("Ask a question about the uploaded file:")
-        
+        language = st.selectbox("Select the language for the answer:", languages, key="language_file")
+
         if st.button("Submit Question about Uploaded File"):
             if st.session_state.file_content is None:
                 st.warning("Please upload a file before asking a question.")
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                file_prompt = f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}"
+                file_prompt = f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."
                 result = query_api(prompt=file_prompt, model='gemma2:27b')
                 
                 if 'error' in result:
@@ -101,12 +105,14 @@ def main():
     # Tab for Direct Question Input
     with st.expander("Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:")
+        language_direct = st.selectbox("Select the language for the answer:", languages, key="language_direct")
         
         if st.button("Submit Question Directly"):
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                result = query_api(prompt=direct_question, model='gemma2:27b')
+                direct_prompt = f"{direct_question}\n\nPlease answer in {language_direct}."
+                result = query_api(prompt=direct_prompt, model='gemma2:27b')
                 
                 if 'error' in result:
                     st.error(result['error'])
