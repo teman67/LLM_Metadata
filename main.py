@@ -65,42 +65,58 @@ def main():
     """
     components.html(html_component)
 
-    # File Upload Section
-    st.header("Upload a File for Analysis")
-    uploaded_file = st.file_uploader("Choose a file")
+    st.header("Choose How to Ask Your Question")
 
-    if uploaded_file is not None:
-        # Read the content of the uploaded file
-        st.session_state.file_content = uploaded_file.read().decode("utf-8")
-        st.write("File content preview:")
-        st.write(st.session_state.file_content[:2000])  # Show a preview of the file content
-        st.success("File uploaded successfully. You can now ask questions about this file.")
-
-    # Question Input Section
-    st.header("Ask a Question About the Uploaded File")
-    user_question = st.text_area("Type your question here:")
-
-    # Button to submit the question
-    if st.button("Submit Question"):
-        if user_question.strip() == "":
-            st.warning("Please enter a question.")
-        elif st.session_state.file_content is None:
-            st.warning("Please upload a file before asking a question.")
-        else:
-            # Use the uploaded file content for the prompt
-            file_prompt = f"File content: {st.session_state.file_content}\n\nQuestion: {user_question}"
-            result = query_api(prompt=file_prompt, model='gemma2:27b')
-
-            if 'error' in result:
-                st.error(result['error'])
+    # Tab for File Upload and Questions
+    with st.expander("Upload a File and Ask a Question"):
+        uploaded_file = st.file_uploader("Choose a file")
+        
+        if uploaded_file is not None:
+            st.session_state.file_content = uploaded_file.read().decode("utf-8")
+            st.write("File content preview:")
+            st.write(st.session_state.file_content[:2000])  # Show a preview of the file content
+            st.success("File uploaded successfully. You can now ask questions about this file.")
+        
+        user_question_file = st.text_area("Ask a question about the uploaded file:")
+        
+        if st.button("Submit Question about Uploaded File"):
+            if st.session_state.file_content is None:
+                st.warning("Please upload a file before asking a question.")
+            elif user_question_file.strip() == "":
+                st.warning("Please enter a question.")
             else:
-                # Display elapsed time and token count
-                st.write(f"Time taken: {result['elapsed_time']:.2f} seconds")
-                st.write(f"Total tokens used: {result['total_tokens']}")
+                file_prompt = f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}"
+                result = query_api(prompt=file_prompt, model='gemma2:27b')
                 
-                response_content = result['response']['choices'][0]['message']['content']
-                st.subheader("Response from the Model:")
-                write(response_content)
+                if 'error' in result:
+                    st.error(result['error'])
+                else:
+                    st.write(f"Time taken: {result['elapsed_time']:.2f} seconds")
+                    st.write(f"Total tokens used: {result['total_tokens']}")
+                    
+                    response_content = result['response']['choices'][0]['message']['content']
+                    st.subheader("Response from the Model:")
+                    write(response_content)
+
+    # Tab for Direct Question Input
+    with st.expander("Ask a Question Directly"):
+        direct_question = st.text_area("Type your question here:")
+        
+        if st.button("Submit Question Directly"):
+            if direct_question.strip() == "":
+                st.warning("Please enter a question.")
+            else:
+                result = query_api(prompt=direct_question, model='gemma2:27b')
+                
+                if 'error' in result:
+                    st.error(result['error'])
+                else:
+                    st.write(f"Time taken: {result['elapsed_time']:.2f} seconds")
+                    st.write(f"Total tokens used: {result['total_tokens']}")
+                    
+                    response_content = result['response']['choices'][0]['message']['content']
+                    st.subheader("Response from the Model:")
+                    write(response_content)
 
 if __name__ == "__main__":
     main()
