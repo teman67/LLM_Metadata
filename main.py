@@ -5,6 +5,7 @@ import logging
 from streamlit_extras.streaming_write import write
 from dotenv import load_dotenv
 import os
+import time  # To measure time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,6 +15,10 @@ logging.basicConfig(level=logging.INFO)
 # Initialize session state for messages if not already present
 if 'messages' not in st.session_state:
     st.session_state.messages = []
+
+def count_tokens(text):
+    """Simple function to count tokens based on whitespace."""
+    return len(text.split())
 
 def query_api(prompt, model='gemma2:27b'):
     url = os.getenv('API_URL')  # Get the URL from an environment variable
@@ -26,11 +31,29 @@ def query_api(prompt, model='gemma2:27b'):
         ]
     }
 
+    # Measure the time taken for the request
+    start_time = time.time()
     response = requests.post(url, json=payload, headers=headers)
+    elapsed_time = time.time() - start_time
+
     if response.status_code == 200:
-        return response.json()
+        response_json = response.json()
+        # Count tokens in the prompt and response
+        prompt_tokens = count_tokens(prompt)
+        response_tokens = count_tokens(response_json['choices'][0]['message']['content'])
+        total_tokens = prompt_tokens + response_tokens
+        
+        return {
+            "response": response_json,
+            "elapsed_time": elapsed_time,
+            "total_tokens": total_tokens
+        }
     else:
-        return {"error": f"Failed with status code {response.status_code}"}
+        return {
+            "error": f"Failed with status code {response.status_code}",
+            "elapsed_time": elapsed_time,
+            "total_tokens": 0
+        }
 
 def main():
     html_component = """
@@ -39,43 +62,6 @@ def main():
     </div>
     """
     components.html(html_component)
-
-    # tab1, tab2, tab3 = st.tabs(["Cat", "Dog", "Owl"])
-
-    # with tab1:
-    #     st.title("A cat")
-    #     st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
-    # with tab2:
-    #     st.header("A dog")
-    #     st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
-    # with tab3:
-    #     st.header("An owl")
-    #     st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
-    
-    # # Preprocessing Section
-    # col1, col2 = st.columns(2)
-
-    # with col1:
-    #     st.text_input("Researcher Name", key="operator_name")
-    #     st.text_input("Date", key="date")
-    #     st.text_input("Experiment Name", key="experiment_name")
-    #     st.text_input("Sample ID", key="sample_id")
-    #     st.text_input("Sample Type", key="sample_type")
-    #     st.text_input("Sample Length", key="sample_length")
-    #     st.text_input("Sample Thickness", key="sample_thickness")
-    #     st.text_input("Tools used", key="tool")
-    #     st.selectbox("Dropdown 1", options=["Option 1", "Option 2"], key="dropdown1")
-        
-    # with col2:
-    #     st.text_input("Researcher ID", key="operator_id")
-    #     st.text_input("Time", key="time")
-    #     st.text_input("Machine used", key="machine")
-    #     st.text_input("Sample Name", key="sample_name")
-    #     st.text_input("Sample size", key="sample_size")
-    #     st.text_input("Sample Width", key="sample_width")
-    #     st.text_input("Sample Weight", key="sample_weight")
-    #     st.text_input("Experiment run time", key="experiment_run_time")
-    #     st.selectbox("Dropdown 2", options=["Option A", "Option B"], key="dropdown2")
 
     # Question Input Section
     st.header("Ask a Question")
@@ -87,15 +73,20 @@ def main():
             st.warning("Please enter a question.")
         else:
             # Query the API with the user's question
-            response = query_api(prompt=user_question, model='gemma2:27b')
+            result = query_api(prompt=user_question, model='gemma2:27b')
 
-            if 'error' in response:
-                st.error(response['error'])
+            if 'error' in result:
+                st.error(result['error'])
             else:
-                # Assuming the response format contains the generated text in the key 'choices'
-                generated_text = response['choices'][0]['message']['content']
+                # Display elapsed time and token count
+                st.write(f"Time taken: {result['elapsed_time']:.2f} seconds")
+                st.write(f"Total tokens used: {result['total_tokens']}")
+                
+                response_content = result['response']['choices'][0]['message']['content']
                 st.subheader("Response from the Model:")
-                write(generated_text)
+                write(response_content)
+
+                
 
 if __name__ == "__main__":
     main()
