@@ -68,7 +68,7 @@ def main():
     st.header("Choose How to Ask Your Question")
 
     # Language Options
-    languages = ["English", "Spanish", "French", "German", "Chinese"]
+    languages = ["English", "Spanish", "French", "German", "Chinese", "Persian", "Hindi", "Russian"]
 
     # Tab for File Upload and Questions
     with st.expander("Upload a File and Ask a Question"):
