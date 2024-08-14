@@ -63,6 +63,31 @@ def main():
     """
     components.html(html_component)
 
+    # File Upload Section
+    st.header("Upload a File for Analysis")
+    uploaded_file = st.file_uploader("Choose a file")
+
+    if uploaded_file is not None:
+        # Read the content of the uploaded file
+        file_content = uploaded_file.read().decode("utf-8")
+        st.write("File content preview:")
+        st.write(file_content[:2000])  # Show a preview of the file content
+
+        # Process the file content with the API
+        if st.button("Analyze File"):
+            result = query_api(prompt=file_content, model='gemma2:27b')
+
+            if 'error' in result:
+                st.error(result['error'])
+            else:
+                # Display elapsed time and token count
+                st.write(f"Time taken: {result['elapsed_time']:.2f} seconds")
+                st.write(f"Total tokens used: {result['total_tokens']}")
+                
+                response_content = result['response']['choices'][0]['message']['content']
+                st.subheader("Response from the Model:")
+                write(response_content)
+
     # Question Input Section
     st.header("Ask a Question")
     user_question = st.text_area("Type your question here:")
@@ -85,8 +110,6 @@ def main():
                 response_content = result['response']['choices'][0]['message']['content']
                 st.subheader("Response from the Model:")
                 write(response_content)
-
-                
 
 if __name__ == "__main__":
     main()
