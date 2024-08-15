@@ -8,7 +8,7 @@ import os
 import time
 
 # Set page configuration with a more visually appealing layout
-st.set_page_config(page_title="Meta Data Management", layout="centered")
+st.set_page_config(page_title="Meta Data Management", layout="wide")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -62,7 +62,8 @@ def query_api(prompt, model='gemma2:27b'):
 
 def compare_models(prompt, language):
     """Function to compare responses from three models."""
-    models = ['gemma2:27b', 'mixtral', 'mistral-nemo']
+    # models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
+    models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest', 'mixtral:8x22b']
     results = {}
     
     st.write("### Model Comparison Results")
@@ -71,7 +72,7 @@ def compare_models(prompt, language):
             result = query_api(prompt=prompt, model=model)
             results[model] = result
 
-    cols = st.columns(3)
+    cols = st.columns(5)
     for idx, model in enumerate(models):
         with cols[idx]:
             st.write(f"**Model: {model}**")
