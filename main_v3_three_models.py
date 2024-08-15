@@ -5,10 +5,10 @@ import logging
 from streamlit_extras.streaming_write import write
 from dotenv import load_dotenv
 import os
-import time  # To measure time
+import time
 
-# Set page configuration to use a wide layout
-st.set_page_config(page_title="Your App Title", layout="wide")
+# Set page configuration with a more visually appealing layout
+st.set_page_config(page_title="Meta Data Management", layout="centered")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -65,51 +65,76 @@ def compare_models(prompt, language):
     models = ['gemma2:27b', 'mixtral', 'mistral-nemo']
     results = {}
     
-    for model in models:
-        result = query_api(prompt=prompt, model=model)
-        results[model] = result
-
     st.write("### Model Comparison Results")
-    cols = st.columns(3)
+    with st.spinner("Fetching responses from models..."):
+        for model in models:
+            result = query_api(prompt=prompt, model=model)
+            results[model] = result
 
+    cols = st.columns(3)
     for idx, model in enumerate(models):
         with cols[idx]:
             st.write(f"**Model: {model}**")
             if 'error' in results[model]:
                 st.error(results[model]['error'])
             else:
-                st.write(f"Time taken: {results[model]['elapsed_time']:.2f} seconds")
-                st.write(f"Total tokens used: {results[model]['total_tokens']}")
-                
+                st.write(f"⏱ **Time taken:** {results[model]['elapsed_time']:.2f} seconds")
+                st.write(f"🔢 **Total tokens used:** {results[model]['total_tokens']}")
                 response_content = results[model]['response']['choices'][0]['message']['content']
                 st.subheader("Response from the Model:")
                 write(response_content)
 
 def main():
-    html_component = """
-    <div style="background-color: #374C9D; padding: 10px; text-align: center;">
-        <h1 style="color: white; font-weight: bold;">Meta data management</h1>
-    </div>
-    """
-    components.html(html_component)
+    # Custom CSS for increasing font size
+    st.markdown(
+        """
+        <style>
+        body {
+            font-size: 1.1em;
+        }
+        .stTextArea textarea {
+            font-size: 1.1em;
+        }
+        .stButton button {
+            font-size: 1.1em;
+        }
+        .stMarkdown p {
+            font-size: 1.1em;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Improved header with consistent and appealing design
+    st.markdown("""
+        <div style="background-color: #374C9D; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
+            <h1 style="color: white; font-weight: bold; font-size: 3em;">Meta Data Management</h1>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.header("Choose How to Ask Your Question")
+    st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
-    # Language Options
+    # Language Options with better default language and tooltips
     languages = ["English", "Spanish", "French", "German", "Chinese", "Persian", "Hindi", "Russian"]
+    default_language = "English"
 
     # Tab for File Upload and Questions
-    with st.expander("Upload a File and Ask a Question"):
-        uploaded_file = st.file_uploader("Choose a file")
+    with st.expander("📄 Upload a File and Ask a Question"):
+        uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "pdf"])
         
         if uploaded_file is not None:
-            st.session_state.file_content = uploaded_file.read().decode("utf-8")
-            st.write("File content preview:")
-            st.write(st.session_state.file_content[:2000])  # Show a preview of the file content
-            st.success("File uploaded successfully. You can now ask questions about this file.")
-        
-        user_question_file = st.text_area("Ask a question about the uploaded file:")
-        language = st.selectbox("Select the language for the answer:", languages, key="language_file")
+            try:
+                st.session_state.file_content = uploaded_file.read().decode("utf-8")
+                st.write("### File Content Preview:")
+                st.text_area("", st.session_state.file_content[:2000], height=200, disabled=True)
+                st.success("File uploaded successfully. You can now ask questions about this file.")
+            except Exception as e:
+                st.error(f"An error occurred while reading the file: {e}")
+
+        user_question_file = st.text_area("Ask a question about the uploaded file:", help="Enter a question related to the content of the uploaded file.")
+        language = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_file")
 
         if st.button("Submit Question about Uploaded File"):
             if st.session_state.file_content is None:
@@ -121,9 +146,9 @@ def main():
                 compare_models(file_prompt, language)
 
     # Tab for Direct Question Input
-    with st.expander("Ask a Question Directly"):
-        direct_question = st.text_area("Type your question here:")
-        language_direct = st.selectbox("Select the language for the answer:", languages, key="language_direct")
+    with st.expander("💬 Ask a Question Directly"):
+        direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
+        language_direct = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_direct")
         
         if st.button("Submit Question Directly"):
             if direct_question.strip() == "":
