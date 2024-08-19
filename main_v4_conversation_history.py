@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import requests
 import logging
 from streamlit_extras.streaming_write import write
@@ -7,13 +6,30 @@ from dotenv import load_dotenv
 import os
 import time
 
+# Function to show the warning message
+def show_warning_message():
+    if not st.session_state.warning_shown:
+        placeholder = st.empty()
+        placeholder.markdown('<div style="background-color: #FFEEEB; padding: 30px; margin-top: 40px; border-radius: 5px; text-align: center;"><p style="font-size: 20px; color: #333333"><strong>For better visualization, it is recommended to use Dark mode instead of Light mode in Settings.</strong></p></div>', unsafe_allow_html=True)
+        st.session_state.warning_shown = True
+
+        time.sleep(5)  # Wait for 5 seconds
+        placeholder.empty()
+
 # Set page configuration with a more visually appealing layout
-st.set_page_config(page_title="Meta Data Management", layout="wide")
+st.set_page_config(page_title="MetaData Retrieval", layout="wide")
 
 # Load environment variables from .env file
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
+
+# Get the API key from environment variables
+api_key = os.getenv('API_KEY')
+
+if not api_key:
+    st.error("Error: API_KEY is missing or empty in the environment variables.")
+    st.stop()
 
 # Initialize session state for messages and file content if not already present
 if 'messages' not in st.session_state:
@@ -25,32 +41,24 @@ def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
-def query_api(prompt, model='gemma2:27b'):
-    url = os.getenv('API_URL')  # Get the URL from an environment variable
-    headers = {"Authorization": os.getenv('API_KEY', 'Bearer ignore-me')}  # Get the API key from an environment variable 
-   
-    # Include conversation history in the payload
+def query_api(messages, model='gemma2:27b'):
+    url = os.getenv('API_URL')
+    headers = {"Authorization": f"Bearer {api_key}"}
     payload = {
         "model": model,
-        "messages": st.session_state.messages + [{"role": "user", "content": prompt}]
+        "messages": messages
     }
 
-    # Measure the time taken for the request
     start_time = time.time()
     response = requests.post(url, json=payload, headers=headers)
     elapsed_time = time.time() - start_time
 
     if response.status_code == 200:
         response_json = response.json()
-        # Count tokens in the prompt and response
-        prompt_tokens = count_tokens(prompt)
+        prompt_tokens = count_tokens('\n'.join([msg['content'] for msg in messages]))
         response_tokens = count_tokens(response_json['choices'][0]['message']['content'])
         total_tokens = prompt_tokens + response_tokens
-        
-        # Add the user's prompt and model's response to the session state
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.messages.append({"role": "assistant", "content": response_json['choices'][0]['message']['content']})
-        
+
         return {
             "response": response_json,
             "elapsed_time": elapsed_time,
@@ -63,18 +71,17 @@ def query_api(prompt, model='gemma2:27b'):
             "total_tokens": 0
         }
 
-def compare_models(prompt, language):
-    """Function to compare responses from three models."""
-    models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest']
+def compare_models(messages, language):
+    models = [ 'mixtral', 'llama3.1:70b-instruct-q8_0']
     results = {}
-    
+
     st.write("### Model Comparison Results")
     with st.spinner("Fetching responses from models..."):
         for model in models:
-            result = query_api(prompt=prompt, model=model)
+            result = query_api(messages=messages, model=model)
             results[model] = result
 
-    cols = st.columns(4)
+    cols = st.columns(2)
     for idx, model in enumerate(models):
         with cols[idx]:
             st.write(f"**Model: {model}**")
@@ -88,7 +95,22 @@ def compare_models(prompt, language):
                 write(response_content)
 
 def main():
-    # Custom CSS for increasing font size
+    if 'warning_shown' not in st.session_state:
+        st.session_state.warning_shown = False
+
+    page_bg_img = '''
+    <style>
+    [data-testid="stApp"]{
+        background-image: url("https://miro.medium.com/v2/resize:fit:960/1*5UvMSNiSNFiMO1OE_xeJJA.png");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: white;
+    }
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
     st.markdown(
         """
         <style>
@@ -109,30 +131,20 @@ def main():
         unsafe_allow_html=True
     )
 
-    # Improved header with consistent and appealing design
+    show_warning_message()
+
     st.markdown("""
-        <div style="background-color: #374C9D; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
-            <h1 style="color: white; font-weight: bold; font-size: 3em;">Meta Data Management</h1>
+        <div style="padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
+            <h1 style="color: white; font-weight: bold; font-size: 3em;">MetaData Retrieval</h1>
         </div>
     """, unsafe_allow_html=True)
 
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
-    # Language Options with better default language and tooltips
     languages = ["English", "Spanish", "French", "German", "Chinese", "Persian", "Hindi", "Russian"]
     default_language = "English"
 
-    # Display the conversation history
-    if st.session_state.messages:
-        st.write("### Conversation History")
-        for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                st.markdown(f"**You:** {msg['content']}")
-            else:
-                st.markdown(f"**Assistant:** {msg['content']}")
-
-    # Tab for File Upload and Questions
     with st.expander("📄 Upload a File and Ask a Question"):
         uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "pdf"])
         
@@ -154,10 +166,12 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                file_prompt = f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."
-                compare_models(file_prompt, language)
+                st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."})
+                compare_models(messages=st.session_state.messages, language=language)
+                # Append the response to the conversation history
+                response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
-    # Tab for Direct Question Input
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
         language_direct = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_direct")
@@ -166,8 +180,11 @@ def main():
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                direct_prompt = f"{direct_question}\n\nPlease answer in {language_direct}."
-                compare_models(direct_prompt, language_direct)
+                st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
+                compare_models(messages=st.session_state.messages, language=language_direct)
+                # Append the response to the conversation history
+                response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
 if __name__ == "__main__":
     main()
