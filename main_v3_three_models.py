@@ -15,6 +15,14 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 
+# Get the API key from environment variables
+api_key = os.getenv('API_KEY')
+
+# Check if the API key is missing or empty
+if not api_key:
+    st.error("Error: API_KEY is missing or empty in the environment variables.")
+    st.stop()  # Stop the Streamlit app from running
+
 # Initialize session state for messages and file content if not already present
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -27,7 +35,7 @@ def count_tokens(text):
 
 def query_api(prompt, model='gemma2:27b'):
     url = os.getenv('API_URL')  # Get the URL from an environment variable
-    headers = {"Authorization": os.getenv('API_KEY', 'Bearer ignore-me')}  # Get the API key from an environment variable 
+    headers = {"Authorization": f"Bearer {api_key}"}  # Use the validated API key
     payload = {
         "model": model,
         "messages": [
@@ -63,7 +71,8 @@ def query_api(prompt, model='gemma2:27b'):
 def compare_models(prompt, language):
     """Function to compare responses from three models."""
     # models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
-    models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest', 'mixtral:8x22b']
+    # models = ['gemma2:27b', 'mixtral', 'mistral-nemo', 'llama3.1:latest', 'mixtral:8x22b']
+    models = [ 'mixtral', 'llama3.1:70b-instruct-q8_0']
     results = {}
     
     st.write("### Model Comparison Results")
@@ -72,7 +81,7 @@ def compare_models(prompt, language):
             result = query_api(prompt=prompt, model=model)
             results[model] = result
 
-    cols = st.columns(5)
+    cols = st.columns(2)
     for idx, model in enumerate(models):
         with cols[idx]:
             st.write(f"**Model: {model}**")
