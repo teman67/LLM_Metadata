@@ -161,7 +161,7 @@ def main():
     default_language = "English"
 
     with st.expander("📄 Upload a File and Ask a Question"):
-        uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "pdf"])
+        uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "pdf", "json", "dat"])
         
         if uploaded_file is not None:
             try:
@@ -179,10 +179,13 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."})
+                # Append only the user's question (without the file content) to the conversation history
+                st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 display_conversation_history()
-                compare_models(messages=st.session_state.messages, language=language)
-                response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
+                # Pass the file content in the API call without storing it in the session state messages
+                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
+                compare_models(messages=api_messages, language=language)
+                response = query_api(messages=api_messages)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
     with st.expander("💬 Ask a Question Directly"):
