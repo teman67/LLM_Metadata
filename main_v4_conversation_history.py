@@ -166,8 +166,6 @@ def main():
         if uploaded_file is not None:
             try:
                 st.session_state.file_content = uploaded_file.read().decode("utf-8")
-                st.write("### File Content Preview:")
-                st.text_area("", st.session_state.file_content[:2000], height=200, disabled=True)
                 st.success("File uploaded successfully. You can now ask questions about this file.")
             except Exception as e:
                 st.error(f"An error occurred while reading the file: {e}")
