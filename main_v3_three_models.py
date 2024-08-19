@@ -8,7 +8,7 @@ import os
 import time
 
 # Set page configuration with a more visually appealing layout
-st.set_page_config(page_title="Meta Data Management", layout="wide")
+st.set_page_config(page_title="MetaData Retrieval", layout="wide")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -95,6 +95,22 @@ def compare_models(prompt, language):
                 write(response_content)
 
 def main():
+    # CSS to set the background image
+    page_bg_img = '''
+    <style>
+    [data-testid="stApp"]{
+        background-image: url("https://miro.medium.com/v2/resize:fit:960/1*5UvMSNiSNFiMO1OE_xeJJA.png");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: white;
+    }
+    </style>
+    '''
+    
+    # Inject CSS
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
     # Custom CSS for increasing font size
     st.markdown(
         """
@@ -118,8 +134,8 @@ def main():
 
     # Improved header with consistent and appealing design
     st.markdown("""
-        <div style="background-color: #374C9D; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
-            <h1 style="color: white; font-weight: bold; font-size: 3em;">Meta Data Management</h1>
+        <div style="padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
+            <h1 style="color: white; font-weight: bold; font-size: 3em;">MetaData Retrieval</h1>
         </div>
     """, unsafe_allow_html=True)
 
@@ -166,6 +182,7 @@ def main():
             else:
                 direct_prompt = f"{direct_question}\n\nPlease answer in {language_direct}."
                 compare_models(direct_prompt, language_direct)
+
 
 if __name__ == "__main__":
     main()
