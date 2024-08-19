@@ -1,0 +1,1 @@
+web: sh setup.sh && streamlit run main_v3_three_models.py
