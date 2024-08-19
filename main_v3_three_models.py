@@ -7,6 +7,20 @@ from dotenv import load_dotenv
 import os
 import time
 
+# Function to show the warning message
+def show_warning_message():
+    '''
+    Displays the warning message recommending dark mode over light mode.
+    '''
+
+    if not st.session_state.warning_shown:
+        placeholder = st.empty()
+        placeholder.markdown('<div style="background-color: #FFEEEB; padding: 30px; margin-top: 40px; border-radius: 5px; text-align: center;"><p style="font-size: 20px; color: #333333"><strong>For better visualization, it is recommended to use Dark mode instead of Light mode in Settings.</strong></p></div>', unsafe_allow_html=True)
+        st.session_state.warning_shown = True
+
+        time.sleep(5)  # Wait for 5 seconds
+        placeholder.empty()
+
 # Set page configuration with a more visually appealing layout
 st.set_page_config(page_title="MetaData Retrieval", layout="wide")
 
@@ -95,6 +109,10 @@ def compare_models(prompt, language):
                 write(response_content)
 
 def main():
+
+    if 'warning_shown' not in st.session_state:
+        st.session_state.warning_shown = False
+
     # CSS to set the background image
     page_bg_img = '''
     <style>
@@ -131,6 +149,9 @@ def main():
         """,
         unsafe_allow_html=True
     )
+
+    # Call the function to display the warning message
+    show_warning_message()
 
     # Improved header with consistent and appealing design
     st.markdown("""
@@ -186,3 +207,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
