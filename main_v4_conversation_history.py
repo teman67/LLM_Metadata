@@ -10,10 +10,10 @@ import time
 def show_warning_message():
     if not st.session_state.warning_shown:
         placeholder = st.empty()
-        placeholder.markdown('<div style="background-color: #FFEEEB; padding: 30px; margin-top: 40px; border-radius: 5px; text-align: center;"><p style="font-size: 20px; color: #333333"><strong>For better visualization, it is recommended to use Dark mode instead of Light mode in Settings.</strong></p></div>', unsafe_allow_html=True)
+        placeholder.markdown('<div style="background-color: #FFEEEB; padding: 30px; margin-top: 40px; border-radius: 5px; text-align: center;"><p style="font-size: 20px; color: #333333"><strong>For better visualization, it is recommended to use Dark mode instead of Light mode in Streamlit Settings (top right).</strong></p></div>', unsafe_allow_html=True)
         st.session_state.warning_shown = True
 
-        time.sleep(5)  # Wait for 5 seconds
+        time.sleep(6)  # Wait for 5 seconds
         placeholder.empty()
 
 # Set page configuration with a more visually appealing layout
