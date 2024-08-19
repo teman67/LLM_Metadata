@@ -37,6 +37,9 @@ if 'messages' not in st.session_state:
 if 'file_content' not in st.session_state:
     st.session_state.file_content = None
 
+# Predefined list of colors for alternating boxes
+colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
+
 def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
@@ -72,7 +75,6 @@ def query_api(messages, model='gemma2:27b'):
         }
 
 def compare_models(messages, language):
-    # models = [ 'mixtral', 'llama3.1:70b-instruct-q8_0']
     models = [ 'mixtral']
     results = {}
 
@@ -97,9 +99,15 @@ def compare_models(messages, language):
 
 def display_conversation_history():
     st.write("### Conversation History")
-    for msg in st.session_state.messages:
+    for idx, msg in enumerate(st.session_state.messages):
+        # Alternate colors based on the index
+        color = colors[idx % len(colors)]
         role = "User" if msg['role'] == "user" else "Assistant"
-        st.write(f"**{role}:** {msg['content']}")
+        st.markdown(f"""
+            <div style="background-color: {color}; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+                <strong>{role}:</strong> {msg['content']}
+            </div>
+            """, unsafe_allow_html=True)
 
 def main():
     if 'warning_shown' not in st.session_state:
@@ -173,11 +181,9 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                # Add user question to history
                 st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."})
                 display_conversation_history()
                 compare_models(messages=st.session_state.messages, language=language)
-                # Append the response to the conversation history
                 response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -189,11 +195,9 @@ def main():
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                # Add user question to history
                 st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
                 display_conversation_history()
                 compare_models(messages=st.session_state.messages, language=language_direct)
-                # Append the response to the conversation history
                 response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
