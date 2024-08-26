@@ -5,7 +5,7 @@ from streamlit_extras.streaming_write import write
 from dotenv import load_dotenv
 import os
 import time
-
+from .login import login
 
 # Load environment variables from .env file
 load_dotenv()
@@ -32,7 +32,7 @@ def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
-def query_api(messages, model='gemma2:27b'):
+def query_api(messages, model='mixtral'):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {api_key}"}
     payload = {
@@ -106,8 +106,11 @@ def main():
     if 'warning_shown' not in st.session_state:
         st.session_state.warning_shown = False
 
-    # Add the rest of your code here...
+    # Add login check
+    if not login():
+        return  # Stop the app if the user is not logged in
 
+    # The rest of your main app logic goes here...
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
@@ -121,27 +124,6 @@ def main():
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
-    st.markdown(
-        """
-        <style>
-        body {
-            font-size: 1.1em;
-        }
-        .stTextArea textarea {
-            font-size: 1.1em;
-        }
-        .stButton button {
-            font-size: 1.1em;
-        }
-        .stMarkdown p {
-            font-size: 1.1em;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
@@ -167,10 +149,8 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                # Append only the user's question (without the file content) to the conversation history
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 display_conversation_history()
-                # Pass the file content in the API call without storing it in the session state messages
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
                 compare_models(messages=api_messages, language=language)
                 response = query_api(messages=api_messages)['response']['choices'][0]['message']['content']
@@ -192,3 +172,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
