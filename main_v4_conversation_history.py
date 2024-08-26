@@ -161,7 +161,7 @@ def main():
     default_language = "English"
 
     with st.expander("📄 Upload a File and Ask a Question"):
-        uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "pdf", "json", "dat"])
+        uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "json", "dat"])
         
         if uploaded_file is not None:
             try:
