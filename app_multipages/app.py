@@ -13,5 +13,15 @@ st.set_page_config(layout="wide")
 app.add_page("Quick Project Summary", page_summary_body)
 app.add_page("Using LLM for MetaData Retrieval", main)
 
+page_bg_img = '''
+<style>
+[data-testid="stSidebar"] > div:first-child {
+background-image: url("https://cdn.pixabay.com/photo/2016/01/02/02/36/sky-1117783_1280.jpg");
+background-size: cover;
+}
+</style>
+'''
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
 
 app.run()  # Run the app
