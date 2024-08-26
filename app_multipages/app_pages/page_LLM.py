@@ -6,18 +6,6 @@ from dotenv import load_dotenv
 import os
 import time
 
-# Function to show the warning message
-def show_warning_message():
-    if not st.session_state.warning_shown:
-        placeholder = st.empty()
-        placeholder.markdown('<div style="background-color: #FFEEEB; padding: 30px; margin-top: 40px; border-radius: 5px; text-align: center;"><p style="font-size: 20px; color: #333333"><strong>For better visualization, it is recommended to use Dark mode instead of Light mode in Streamlit Settings (top right).</strong></p></div>', unsafe_allow_html=True)
-        st.session_state.warning_shown = True
-
-        time.sleep(6)  # Wait for 5 seconds
-        placeholder.empty()
-
-# Set page configuration with a more visually appealing layout
-st.set_page_config(layout="wide")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -110,8 +98,15 @@ def display_conversation_history():
             """, unsafe_allow_html=True)
 
 def main():
+    # Ensure that session state variables are initialized at the very beginning
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'file_content' not in st.session_state:
+        st.session_state.file_content = None
     if 'warning_shown' not in st.session_state:
         st.session_state.warning_shown = False
+
+    # Add the rest of your code here...
 
     page_bg_img = '''
     <style>
@@ -146,14 +141,7 @@ def main():
         unsafe_allow_html=True
     )
 
-    show_warning_message()
-
-    # st.markdown("""
-    #     <div style="padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;">
-    #         <h1 style="color: white; font-weight: bold; font-size: 3em;">MetaData Retrieval</h1>
-    #     </div>
-    # """, unsafe_allow_html=True)
-
+    
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
