@@ -63,7 +63,7 @@ def query_api(messages, model='mixtral'):
         }
 
 def compare_models(messages, language):
-    models = [ 'mixtral']
+    models = ['mixtral']
     results = {}
 
     st.write("### Model Comparison Results")
@@ -96,6 +96,21 @@ def display_conversation_history():
                 <strong>{role}:</strong> {msg['content']}
             </div>
             """, unsafe_allow_html=True)
+
+def download_conversation_history():
+    # Format the conversation history
+    history_text = ""
+    for msg in st.session_state.messages:
+        role = "User" if msg['role'] == "user" else "Assistant"
+        history_text += f"{role}: {msg['content']}\n\n"
+
+    # Provide a download button
+    st.download_button(
+        label="Download Conversation History",
+        data=history_text,
+        file_name="conversation_history.txt",
+        mime="text/plain"
+    )
 
 def main():
     # Ensure that session state variables are initialized at the very beginning
@@ -170,6 +185,8 @@ def main():
                 response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
+    # Add the download button for conversation history
+    download_conversation_history()
+
 if __name__ == "__main__":
     main()
-
