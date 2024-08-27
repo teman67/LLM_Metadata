@@ -51,7 +51,7 @@ def page_summary_body():
     st.write("### Quick Project Summary")
 
     st.info(
-        f"**Introducing to the Plant Disease Recognition**\n\n"
+        f"**Introducing to the MetaData Schema Builder**\n\n"
         f"Welcome to the Metadata Schema Builder Interface! This web application allows users to generate a metadata schema based on an uploaded experimental machine data file. By leveraging the power of a large language model (LLM), the interface processes the input data and outputs a JSON file that represents the metadata schema. This tool is designed to simplify the creation of metadata schemas, making it easier to standardize data across experiments and systems.\n")
 
     st.write(
