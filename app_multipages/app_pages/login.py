@@ -1,9 +1,12 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
+import time
 
 def login():
-    st.title("Login")
+    # Use st.empty() to manage the display of the title
+    title_placeholder = st.empty()
+    title_placeholder.title("Login")
 
     # Load environment variables from .env file
     load_dotenv()
@@ -12,20 +15,17 @@ def login():
     USERNAME = os.getenv("APP_USERNAME")
     PASSWORD = os.getenv("APP_PASSWORD")
 
-    # Debug: Print loaded environment variables to ensure they are correct
-    # st.write(f"Loaded USERNAME: {USERNAME}")
-    # st.write(f"Loaded PASSWORD: {PASSWORD}")
-
     # Initialize session state
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
-    # # Debug: Print session state
-    # st.write(f"Session state logged_in: {st.session_state.logged_in}")
-
     # Check if user is already logged in
     if st.session_state.logged_in:
-        st.success("You are already logged in!")
+        success_message = st.empty()
+        success_message.success("You are already logged in!")
+        time.sleep(2)
+        success_message.empty()  # Clear the success message after 2 seconds
+        title_placeholder.empty()  # Clear the title after 2 seconds
         return True
 
     # Display login form
@@ -35,9 +35,9 @@ def login():
         submit_button = st.form_submit_button("Login")
 
         if submit_button:
-            st.write(f"Submitted username: {username}")  # Debug: Print entered username
             if username == USERNAME and password == PASSWORD:
                 st.session_state.logged_in = True
+                title_placeholder.empty()  # Clear the title on successful login
                 st.success("Login successful!")
                 return True
             else:
