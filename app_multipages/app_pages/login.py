@@ -4,6 +4,16 @@ import os
 import time
 
 def login():
+    # Initialize session state for login status if not already present
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    # Check if user is already logged in
+    if st.session_state.logged_in:
+        # Skip the login form and show a message or redirect as needed
+        st.write("You are already logged in!")
+        return True
+
     # Use st.empty() to manage the display of the title
     title_placeholder = st.empty()
     title_placeholder.title("Login")
@@ -14,19 +24,6 @@ def login():
     # Retrieve credentials from environment variables
     USERNAME = os.getenv("APP_USERNAME")
     PASSWORD = os.getenv("APP_PASSWORD")
-
-    # Initialize session state
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-
-    # Check if user is already logged in
-    if st.session_state.logged_in:
-        success_message = st.empty()
-        success_message.success("You are already logged in!")
-        time.sleep(2)
-        success_message.empty()  # Clear the success message after 2 seconds
-        title_placeholder.empty()  # Clear the title after 2 seconds
-        return True
 
     # Display login form
     with st.form(key='login_form'):
@@ -39,6 +36,8 @@ def login():
                 st.session_state.logged_in = True
                 title_placeholder.empty()  # Clear the title on successful login
                 st.success("Login successful!")
+                # Optionally, use a method to redirect or update the UI
+                # st.experimental_rerun()  # Rerun the app to reflect the updated state
                 return True
             else:
                 st.error("Invalid username or password")
