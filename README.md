@@ -2,6 +2,7 @@
 
 ### Live link [Metadata Retrieval](https://llm-metadata-9be4a58fb16b.herokuapp.com/)
 
+
 ## Overview
 
 Welcome to the Metadata Schema Builder Interface! This web application allows users to generate a metadata schema based on an uploaded experimental machine data file. By leveraging the power of a large language model (LLM), the interface processes the input data and outputs a JSON file that represents the metadata schema. This tool is designed to simplify the creation of metadata schemas, making it easier to standardize data across experiments and systems.
@@ -9,96 +10,90 @@ Welcome to the Metadata Schema Builder Interface! This web application allows us
 ## Features
 
 - **File Upload:** Upload your experimental machine data file in the supported format.
-- **Automated Schema Generation:** The interface uses an LLM model to analyze the uploaded data and generate a metadata schema in JSON format.
-- **JSON Output:** Download the generated metadata schema as a JSON file for further use or integration.
+- **Automated Schema Generation:** The interface uses an LLM model to analyze the uploaded data and generate a metadata schema.
+- **Language Selection**: Choose the language for the responses.
+- **Output:** Download the generated metadata schema as a file for further use or integration.
 - **User-Friendly Interface:** The web interface is designed to be intuitive and easy to use, even for users with minimal technical expertise.
 
-## Getting Started
+## Installation
 
-### Prerequisites
+### Clone the Repository
 
-Before using the Metadata Schema Builder Interface, ensure you have the following:
+```bash
+git clone https://github.com/teman67/LLM_Metadata.git
+cd LLM_Metadata
+```
 
-- A modern web browser (e.g., Chrome, Firefox, Edge).
-- An experimental machine data file in a supported format (e.g., CSV, TSV, Excel).
+### Set Up a Virtual Environment (Optional but Recommended)
 
-### Installation
+```bash
+python -m .venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
 
-If you're running this interface locally, follow these steps to set it up:
+### Install Required Packages
 
-1. **Clone the Repository:**
+```bash
+pip install -r requirements.txt
+```
 
-   ```bash
-   git clone https://github.com/yourusername/metadata-schema-builder.git
-   cd metadata-schema-builder
-   ```
+### Set Up Environment Variables
 
-2. **Install Dependencies:**
+Create a `.env` file in the root directory with the following content:
 
-   Ensure you have Node.js and npm installed. Then, run:
+```env
+API_KEY=your_api_key
+API_URL=your_api_url
+```
 
-   ```bash
-   npm install
-   ```
+Replace `your_api_key` and `your_api_url` with your actual API key and URL.
 
-3. **Run the Application:**
+## Usage
 
-   Start the development server:
+### Run the Application
 
-   ```bash
-   npm start
-   ```
+```bash
+streamlit run app.py
+```
 
-   The application will be available at `http://localhost:3000`.
+### Access the App
 
-### Usage
+Open your web browser and go to `http://localhost:8501`.
 
-1. **Access the Interface:**
+## How to Use
 
-   Open the web interface in your browser.
+### Upload a File and Ask a Question
 
-2. **Upload a File:**
+1. Upload a file (supports `.txt`, `.docx`, `.json`, `.dat`).
+2. Enter your question about the file.
+3. Select the language for the response.
+4. Click "Submit Question about Uploaded File" to get the response.
 
-   - Click the "Upload" button.
-   - Select your experimental machine data file from your local machine.
+### Ask a Question Directly
 
-3. **Generate Metadata Schema:**
+1. Enter your question in the text area.
+2. Select the language for the response.
+3. Click "Submit Question Directly" to receive the answer.
 
-   - Click the "Generate Schema" button.
-   - The interface will process the uploaded file and display the resulting metadata schema.
+### Model Selection
 
-4. **Download JSON File:**
+- Choose a model from the dropdown menu.
 
-   - Click the "Download JSON" button to save the generated metadata schema to your local machine.
+### Conversation History
 
-## File Formats
+- View and download the conversation history using the provided button.
 
-The interface currently supports the following file formats for upload:
+## Configuration
 
-- CSV (Comma-Separated Values)
-- TSV (Tab-Separated Values)
-- Excel (XLSX)
+- **API Key**: Ensure your API key is set in the `.env` file.
+- **API URL**: Specify the API endpoint URL in the `.env` file.
+- **Models**: Modify the list of available models in the source code as needed.
 
-Please ensure that your data file is properly formatted before uploading to avoid any errors during schema generation.
+## Troubleshooting
 
-## Contributing
-
-We welcome contributions to enhance the Metadata Schema Builder Interface! To contribute:
-
-1. Fork the repository.
-2. Create a new branch with your feature or bug fix:
-   ```bash
-   git checkout -b feature-name
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m "Add a new feature"
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature-name
-   ```
-5. Create a Pull Request.
+- **Missing API Key**: Make sure the `API_KEY` is correctly set in the `.env` file.
+- **File Upload Issues**: Verify file format and encoding, and ensure the file is correctly processed.
+- **Model Errors**: Confirm that the API URL and model configurations are accurate.
 
 ## License
 
@@ -106,10 +101,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-If you have any questions, issues, or suggestions, please feel free to reach out:
-
-- **Email:** amirhossein.bayani@gmail.com
+For questions or issues, please contact [amirhossein.bayani@gmail.com](mailto:amirhossein.bayani@gmail.com).
 
 ---
 
-Thank you for using the Metadata Schema Builder Interface! We hope it simplifies your metadata creation process.
+Enjoy exploring different language models with this app!
