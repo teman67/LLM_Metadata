@@ -29,7 +29,7 @@ if 'file_content' not in st.session_state:
 colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
 
 # List of available models
-models = ['mixtral', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0', 'llama3.1:70b-instruct-fp16']
+models = ['mixtral:latest', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
 
 def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
