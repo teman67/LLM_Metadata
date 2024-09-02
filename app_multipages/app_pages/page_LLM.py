@@ -28,11 +28,14 @@ if 'file_content' not in st.session_state:
 # Predefined list of colors for alternating boxes
 colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
 
+# List of available models
+models = ['mixtral', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0', 'llama3.1:70b-instruct-fp16']
+
 def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
-def query_api(messages, model='mixtral'):
+def query_api(messages, model):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {api_key}"}
     payload = {
@@ -62,18 +65,16 @@ def query_api(messages, model='mixtral'):
             "total_tokens": 0
         }
 
-def compare_models(messages, language):
-    models = ['mixtral']
+def compare_models(messages, selected_model):
     results = {}
 
     st.write("### Model Comparison Results")
     with st.spinner("Fetching responses from models..."):
-        for model in models:
-            result = query_api(messages=messages, model=model)
-            results[model] = result
+        result = query_api(messages=messages, model=selected_model)
+        results[selected_model] = result
 
     cols = st.columns(1)
-    for idx, model in enumerate(models):
+    for idx, model in enumerate([selected_model]):
         with cols[idx]:
             st.write(f"**Model: {model}**")
             if 'error' in results[model]:
@@ -142,6 +143,9 @@ def main():
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
+    # Dropdown menu for model selection
+    selected_model = st.selectbox("Select LLM Model:", models)
+
     languages = ["English", "German"]
     default_language = "English"
 
@@ -167,8 +171,8 @@ def main():
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 display_conversation_history()
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
-                compare_models(messages=api_messages, language=language)
-                response = query_api(messages=api_messages)['response']['choices'][0]['message']['content']
+                compare_models(messages=api_messages, selected_model=selected_model)
+                response = query_api(messages=api_messages, model=selected_model)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
     with st.expander("💬 Ask a Question Directly"):
@@ -181,8 +185,8 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
                 display_conversation_history()
-                compare_models(messages=st.session_state.messages, language=language_direct)
-                response = query_api(messages=st.session_state.messages)['response']['choices'][0]['message']['content']
+                compare_models(messages=st.session_state.messages, selected_model=selected_model)
+                response = query_api(messages=st.session_state.messages, model=selected_model)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
     # Add the download button for conversation history
