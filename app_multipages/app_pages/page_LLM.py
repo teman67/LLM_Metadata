@@ -7,6 +7,51 @@ import os
 import time
 from .login import login
 
+
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the PostgreSQL URL from the environment variables
+POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')
+
+# Debugging: Check if POSTGRESQL_URL is loaded
+if POSTGRESQL_URL is None:
+    raise ValueError("Error: POSTGRESQL_URL is missing or empty in the environment variables.")
+else:
+    print(f"Loaded POSTGRESQL_URL: {POSTGRESQL_URL}")
+
+# Define the database engine using the PostgreSQL URL
+engine = create_engine(POSTGRESQL_URL)
+Base = declarative_base()
+
+# Define the Conversation model
+class Conversation(Base):
+    __tablename__ = 'conversations'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    role = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+# Create the table
+Base.metadata.create_all(engine)
+
+# Create a session
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+def save_message_to_db(role, content):
+    conversation = Conversation(role=role, content=content)
+    session.add(conversation)
+    session.commit()
+
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -169,11 +214,13 @@ def main():
                 st.warning("Please enter a question.")
             else:
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
+                save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
                 display_conversation_history()
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
                 compare_models(messages=api_messages, selected_model=selected_model)
                 response = query_api(messages=api_messages, model=selected_model)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
+                save_message_to_db("assistant", response)
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
@@ -184,13 +231,16 @@ def main():
                 st.warning("Please enter a question.")
             else:
                 st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
+                save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
                 display_conversation_history()
                 compare_models(messages=st.session_state.messages, selected_model=selected_model)
                 response = query_api(messages=st.session_state.messages, model=selected_model)['response']['choices'][0]['message']['content']
                 st.session_state.messages.append({"role": "assistant", "content": response})
+                save_message_to_db("assistant", response)
 
     # Add the download button for conversation history
     download_conversation_history()
+
 
 if __name__ == "__main__":
     main()
