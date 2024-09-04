@@ -45,6 +45,20 @@ def get_conversation_history():
 
 # Function to display conversation history
 def display_conversation_history():
+
+    page_bg_img = '''
+    <style>
+    [data-testid="stApp"]{
+        background-image: url("https://res.cloudinary.com/dlthn5m1i/image/upload/v1725435253/lake-4541454_1920_yjpcug.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: white;
+    }
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
     st.write("### Conversation History")
     history = get_conversation_history()
     if not history:
@@ -59,4 +73,3 @@ def display_conversation_history():
                     <strong>{role}:</strong> {conv.content} <br> <small>{conv.timestamp}</small>
                 </div>
                 """, unsafe_allow_html=True)
-
