@@ -4,7 +4,7 @@ import logging
 from streamlit_extras.streaming_write import write
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import os
@@ -36,31 +36,23 @@ class Conversation(Base):
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
 
-# Create the table
+# Create the table if it doesn't exist
 Base.metadata.create_all(engine)
 
-# Create a session
-Session = sessionmaker(bind=engine)
-session = Session()
-
+# Create a session factory
+SessionFactory = sessionmaker(bind=engine)
 
 def save_message_to_db(role, content):
-    conversation = Conversation(role=role, content=content)
-    session.add(conversation)
-    session.commit()
-
-
-# Load environment variables from .env file
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO)
-
-# Get the API key from environment variables
-api_key = os.getenv('API_KEY')
-
-if not api_key:
-    st.error("Error: API_KEY is missing or empty in the environment variables.")
-    st.stop()
+    session = SessionFactory()
+    try:
+        conversation = Conversation(role=role, content=content)
+        session.add(conversation)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        st.error(f"An error occurred while saving to the database: {e}")
+    finally:
+        session.close()
 
 # Initialize session state for messages and file content if not already present
 if 'messages' not in st.session_state:
@@ -80,7 +72,7 @@ def count_tokens(text):
 
 def query_api(messages, model):
     url = os.getenv('API_URL')
-    headers = {"Authorization": f"Bearer {api_key}"}
+    headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
         "model": model,
         "messages": messages
@@ -90,23 +82,39 @@ def query_api(messages, model):
     response = requests.post(url, json=payload, headers=headers)
     elapsed_time = time.time() - start_time
 
+    response_json = response.json()
+    
     if response.status_code == 200:
-        response_json = response.json()
-        prompt_tokens = count_tokens('\n'.join([msg['content'] for msg in messages]))
-        response_tokens = count_tokens(response_json['choices'][0]['message']['content'])
-        total_tokens = prompt_tokens + response_tokens
-
-        return {
-            "response": response_json,
-            "elapsed_time": elapsed_time,
-            "total_tokens": total_tokens
-        }
+        # Check if the response structure is as expected
+        if 'choices' in response_json and len(response_json['choices']) > 0:
+            choice = response_json['choices'][0]
+            if 'message' in choice and 'content' in choice['message']:
+                response_content = choice['message']['content']
+                return {
+                    "response": response_json,
+                    "elapsed_time": elapsed_time,
+                    "total_tokens": count_tokens(response_content),
+                    "content": response_content
+                }
+            else:
+                return {
+                    "error": "API response missing 'message' or 'content' key",
+                    "elapsed_time": elapsed_time,
+                    "total_tokens": 0
+                }
+        else:
+            return {
+                "error": "API response missing 'choices' key or empty 'choices'",
+                "elapsed_time": elapsed_time,
+                "total_tokens": 0
+            }
     else:
         return {
             "error": f"Failed with status code {response.status_code}",
             "elapsed_time": elapsed_time,
             "total_tokens": 0
         }
+
 
 def compare_models(messages, selected_model):
     results = {}
@@ -186,7 +194,6 @@ def main():
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
-    # Dropdown menu for model selection
     selected_model = st.selectbox("Select LLM Model:", models)
 
     languages = ["English", "German"]
@@ -213,12 +220,18 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
-                display_conversation_history()
+                # display_conversation_history()
+                
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
-                compare_models(messages=api_messages, selected_model=selected_model)
-                response = query_api(messages=api_messages, model=selected_model)['response']['choices'][0]['message']['content']
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                save_message_to_db("assistant", response)
+                result = query_api(messages=api_messages, model=selected_model)
+                
+                if 'error' in result:
+                    st.error(result['error'])
+                else:
+                    response = result['content']
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    save_message_to_db("assistant", response)
+                    display_conversation_history()
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
@@ -230,15 +243,21 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
                 save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
-                display_conversation_history()
-                compare_models(messages=st.session_state.messages, selected_model=selected_model)
-                response = query_api(messages=st.session_state.messages, model=selected_model)['response']['choices'][0]['message']['content']
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                save_message_to_db("assistant", response)
+                # display_conversation_history()
+                
+                api_messages = st.session_state.messages
+                result = query_api(messages=api_messages, model=selected_model)
+                
+                if 'error' in result:
+                    st.error(result['error'])
+                else:
+                    response = result['content']
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    save_message_to_db("assistant", response)
+                    display_conversation_history()
 
     # Add the download button for conversation history
     download_conversation_history()
-
 
 if __name__ == "__main__":
     main()
