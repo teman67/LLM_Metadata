@@ -1,10 +1,11 @@
 import streamlit as st
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,12 +35,13 @@ class Conversation(Base):
 # Create the table if it doesn't exist
 Base.metadata.create_all(engine)
 
-# Create a session factory
-Session = scoped_session(sessionmaker(bind=engine))
+# Create a session
+Session = sessionmaker(bind=engine)
+session = Session()
 
 # Function to get conversation history
 def get_conversation_history():
-    session = Session()
+    
     try:
         history = session.query(Conversation).order_by(Conversation.timestamp).all()
         return history
@@ -52,6 +54,7 @@ def get_conversation_history():
 
 # Function to display conversation history
 def display_conversation_history():
+
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
@@ -79,4 +82,3 @@ def display_conversation_history():
                     <strong>{role}:</strong> {conv.content} <br> <small>{conv.timestamp}</small>
                 </div>
                 """, unsafe_allow_html=True)
-
