@@ -85,15 +85,18 @@ def query_api(messages, model):
     response_json = response.json()
     
     if response.status_code == 200:
-        # Check if the response structure is as expected
         if 'choices' in response_json and len(response_json['choices']) > 0:
             choice = response_json['choices'][0]
             if 'message' in choice and 'content' in choice['message']:
                 response_content = choice['message']['content']
+                prompt_tokens = count_tokens('\n'.join([msg['content'] for msg in messages]))
+                response_tokens = count_tokens(response_content)
+                total_tokens = prompt_tokens + response_tokens
+                
                 return {
                     "response": response_json,
                     "elapsed_time": elapsed_time,
-                    "total_tokens": count_tokens(response_content),
+                    "total_tokens": total_tokens,
                     "content": response_content
                 }
             else:
@@ -114,6 +117,7 @@ def query_api(messages, model):
             "elapsed_time": elapsed_time,
             "total_tokens": 0
         }
+
 
 
 def compare_models(messages, selected_model):
@@ -231,7 +235,11 @@ def main():
                     response = result['content']
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     save_message_to_db("assistant", response)
+                    # Display time taken and token usage
+                    st.write(f"⏱ **Time taken:** {result['elapsed_time']:.2f} seconds")
+                    st.write(f"🔢 **Total tokens used:** {result['total_tokens']}")
                     display_conversation_history()
+                    
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
@@ -254,10 +262,15 @@ def main():
                     response = result['content']
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     save_message_to_db("assistant", response)
+                    # Display time taken and token usage
+                    st.write(f"⏱ **Time taken:** {result['elapsed_time']:.2f} seconds")
+                    st.write(f"🔢 **Total tokens used:** {result['total_tokens']}")
                     display_conversation_history()
-
+                    
+                    
     # Add the download button for conversation history
     download_conversation_history()
 
 if __name__ == "__main__":
     main()
+
