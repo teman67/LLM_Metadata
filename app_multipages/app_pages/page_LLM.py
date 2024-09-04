@@ -2,16 +2,14 @@ import streamlit as st
 import requests
 import logging
 from streamlit_extras.streaming_write import write
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 import os
 import time
 from .login import login
-
-
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,7 +34,7 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
 
 # Create the table
 Base.metadata.create_all(engine)
