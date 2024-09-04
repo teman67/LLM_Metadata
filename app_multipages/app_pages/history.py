@@ -41,7 +41,7 @@ Session = scoped_session(sessionmaker(bind=engine))
 def get_conversation_history():
     session = Session()
     try:
-        history = session.query(Conversation).order_by(Conversation.timestamp).all()
+        history = session.query(Conversation).order_by(Conversation.timestamp.desc()).all()
         return history
     except Exception as e:
         session.rollback()
@@ -71,12 +71,37 @@ def display_conversation_history():
         st.info("No conversation history found.")
     else:
         colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
-        for idx, conv in enumerate(history):
-            color = colors[idx % len(colors)]
-            role = "User" if conv.role == "user" else "Assistant"
-            st.markdown(f"""
-                <div style="background-color: {color}; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                    <strong>{role}:</strong> {conv.content} <br> <small>{conv.timestamp}</small>
-                </div>
-                """, unsafe_allow_html=True)
+        # Prepare a dictionary to hold user and assistant messages
+        messages = {"user": [], "assistant": []}
+
+        # Organize messages into user and assistant lists
+        for conv in history:
+            role = "user" if conv.role == "user" else "assistant"
+            messages[role].append((conv.content, conv.timestamp))
+
+        # Determine the maximum number of messages between user and assistant
+        max_len = max(len(messages["user"]), len(messages["assistant"]))
+
+        # Display messages side by side
+        for i in range(max_len):
+            cols = st.columns(2)
+            user_message = messages["user"][i] if i < len(messages["user"]) else (None, None)
+            assistant_message = messages["assistant"][i] if i < len(messages["assistant"]) else (None, None)
+            
+            # Display user message
+            if user_message[0]:
+                cols[0].markdown(f"""
+                    <div style="background-color: #ad6a5a; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+                        <strong>User:</strong> {user_message[0]} <br> <small>{user_message[1]}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # Display assistant message
+            if assistant_message[0]:
+                cols[1].markdown(f"""
+                    <div style="background-color: #5aad78; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+                        <strong>Assistant:</strong> {assistant_message[0]} <br> <small>{assistant_message[1]}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+
 
