@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import logging
 from streamlit_extras.streaming_write import write
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime, timezone
@@ -34,6 +34,9 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
+    model_name = Column(String, nullable=True)
+    token_usage = Column(Integer, nullable=True)
+    elapsed_time = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
 
 # Create the table if it doesn't exist
@@ -42,10 +45,16 @@ Base.metadata.create_all(engine)
 # Create a session factory
 SessionFactory = sessionmaker(bind=engine)
 
-def save_message_to_db(role, content):
+def save_message_to_db(role, content, model_name=None, elapsed_time=None, token_usage=None):
     session = SessionFactory()
     try:
-        conversation = Conversation(role=role, content=content)
+        conversation = Conversation(
+            role=role, 
+            content=content, 
+            model_name=model_name, 
+            elapsed_time=elapsed_time, 
+            token_usage=token_usage
+        )
         session.add(conversation)
         session.commit()
     except Exception as e:
@@ -135,6 +144,17 @@ def compare_models(messages, selected_model):
             if 'error' in results[model]:
                 st.error(results[model]['error'])
             else:
+                response_content = results[model]['response']['choices'][0]['message']['content']
+                elapsed_time = results[model]['elapsed_time']
+                total_tokens = results[model]['total_tokens']
+                # Save response to the database with model details
+                save_message_to_db(
+                    role="assistant", 
+                    content=response_content, 
+                    model_name=model, 
+                    elapsed_time=elapsed_time, 
+                    token_usage=total_tokens
+                )
                 st.write(f"⏱ **Time taken:** {results[model]['elapsed_time']:.2f} seconds")
                 st.write(f"🔢 **Total tokens used:** {results[model]['total_tokens']}")
                 response_content = results[model]['response']['choices'][0]['message']['content']
@@ -231,13 +251,16 @@ def main():
                 
                 if 'error' in result:
                     st.error(result['error'])
-                else:
+                else:                                   
                     response = result['content']
+                    elapsed_time = result['elapsed_time']
+                    total_tokens = result['total_tokens']
+                    # Save assistant response with model info
                     st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response)
-                    # Display time taken and token usage
-                    st.write(f"⏱ **Time taken:** {result['elapsed_time']:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used:** {result['total_tokens']}")
+                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
+                    # Display results
+                    st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
+                    st.write(f"🔢 **Total tokens used:** {total_tokens}")
                     display_conversation_history()
                     
 
@@ -260,11 +283,14 @@ def main():
                     st.error(result['error'])
                 else:
                     response = result['content']
+                    elapsed_time = result['elapsed_time']
+                    total_tokens = result['total_tokens']
+                    # Save assistant response with model info
                     st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response)
-                    # Display time taken and token usage
-                    st.write(f"⏱ **Time taken:** {result['elapsed_time']:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used:** {result['total_tokens']}")
+                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
+                    # Display results
+                    st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
+                    st.write(f"🔢 **Total tokens used:** {total_tokens}")
                     display_conversation_history()
                     
                     
@@ -273,4 +299,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
