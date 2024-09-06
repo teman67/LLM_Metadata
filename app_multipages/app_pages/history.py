@@ -4,8 +4,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime, timezone
 from dotenv import load_dotenv
-from .login import login
 import os
+import time  # Import time module
 
 # Load environment variables from .env file
 load_dotenv()
@@ -44,7 +44,6 @@ Session = scoped_session(sessionmaker(bind=engine))
 # Initialize session state for login status
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-
 
 # Function to get conversation history
 def get_conversation_history():
@@ -87,7 +86,6 @@ def delete_conversation(conv_id):
     finally:
         session.close()
 
-
 # Function to display conversation history
 def display_conversation_history():
     # Ensure that session state variables are initialized at the very beginning
@@ -98,7 +96,23 @@ def display_conversation_history():
     if 'warning_shown' not in st.session_state:
         st.session_state.warning_shown = False
 
-   
+    # Create a placeholder for the loading message
+    loading_message = st.empty()
+
+    # Display "loading" message in the placeholder
+    loading_message.markdown("""
+        <div style="text-align:center;">
+            <h3>🔄 History is loading... Please wait a moment...</h3>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Add 2-second pause
+    time.sleep(2)
+
+    # Remove the loading message after 2 seconds
+    loading_message.empty()
+
+    # Load the rest of the page content
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
@@ -144,7 +158,6 @@ def display_conversation_history():
                     if cols[2].button(f"Delete", key=f"del_{user_message[0]}"):
                         delete_conversation(user_message[0])
                         # st.experimental_rerun()  # Refresh the page after deletion
-                        
 
             if assistant_message[0]:
                 cols[1].markdown(f"""
@@ -156,7 +169,3 @@ def display_conversation_history():
                         <small>Elapsed Time: {assistant_message[4] if assistant_message[4] else 'Unknown'} </small>
                     </div>
                     """, unsafe_allow_html=True)
-
-
-
-
