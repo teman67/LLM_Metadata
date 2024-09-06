@@ -98,7 +98,7 @@ def display_conversation_history():
             if user_message[0]:
                 cols[0].markdown(f"""
                     <div style="background-color: #ad6a5a; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                        <strong>User:</strong> {user_message[0]} <br> <small>{user_message[1]}</small>
+                        <strong>User:</strong> {user_message[0]} <br> <small>Date and Time: {user_message[1]}</small>
                     </div>
                     """, unsafe_allow_html=True)
 
