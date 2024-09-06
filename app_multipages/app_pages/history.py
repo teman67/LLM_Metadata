@@ -90,6 +90,15 @@ def delete_conversation(conv_id):
 
 # Function to display conversation history
 def display_conversation_history():
+    # Ensure that session state variables are initialized at the very beginning
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'file_content' not in st.session_state:
+        st.session_state.file_content = None
+    if 'warning_shown' not in st.session_state:
+        st.session_state.warning_shown = False
+
+   
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
