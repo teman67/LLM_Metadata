@@ -101,9 +101,26 @@ def display_conversation_history():
 
     # Display "loading" message in the placeholder
     loading_message.markdown("""
-        <div style="text-align:center;">
-            <h3>🔄 History is loading... Please wait a moment...</h3>
-        </div>
+    <style>
+    .spinner {
+        margin: 0 auto;
+        border: 5px solid #f3f3f3; /* Light grey */
+        border-top: 5px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+    <div style="text-align:center;">
+        <h3>History is loading. Please wait a moment...</h3>
+        <div class="spinner"></div>
+    </div>
     """, unsafe_allow_html=True)
 
     # Add 2-second pause
