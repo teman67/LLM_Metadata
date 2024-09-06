@@ -1,8 +1,8 @@
 import streamlit as st
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 import os
 
@@ -29,7 +29,10 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    model_name = Column(String, nullable=True)
+    token_usage = Column(Integer, nullable=True)
+    elapsed_time = Column(Float, nullable=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
 
 # Create the table if it doesn't exist
 Base.metadata.create_all(engine)
@@ -74,10 +77,13 @@ def display_conversation_history():
         # Prepare a dictionary to hold user and assistant messages
         messages = {"user": [], "assistant": []}
 
-        # Organize messages into user and assistant lists
+        # Organize messages into user and assistant lists, including model_name for assistants
         for conv in history:
             role = "user" if conv.role == "user" else "assistant"
-            messages[role].append((conv.content, conv.timestamp))
+            if role == "user":
+                messages["user"].append((conv.content, conv.timestamp))
+            else:
+                messages["assistant"].append((conv.content, conv.timestamp, conv.model_name, conv.token_usage, conv.elapsed_time))
 
         # Determine the maximum number of messages between user and assistant
         max_len = max(len(messages["user"]), len(messages["assistant"]))
@@ -86,7 +92,7 @@ def display_conversation_history():
         for i in range(max_len):
             cols = st.columns(2)
             user_message = messages["user"][i] if i < len(messages["user"]) else (None, None)
-            assistant_message = messages["assistant"][i] if i < len(messages["assistant"]) else (None, None)
+            assistant_message = messages["assistant"][i] if i < len(messages["assistant"]) else (None, None, None)
             
             # Display user message
             if user_message[0]:
@@ -96,12 +102,17 @@ def display_conversation_history():
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Display assistant message
+            # Display assistant message with model name
             if assistant_message[0]:
                 cols[1].markdown(f"""
                     <div style="background-color: #5aad78; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                        <strong>Assistant:</strong> {assistant_message[0]} <br> <small>{assistant_message[1]}</small>
+                        <strong>Assistant:</strong> {assistant_message[0]} <br> 
+                        <small>Date and Time: {assistant_message[1]}</small><br>
+                        <small>Model: {assistant_message[2] if assistant_message[2] else 'Unknown'}</small><br>
+                        <small>Token_usage: {assistant_message[3] if assistant_message[3] else 'Unknown'} </small> ---
+                        <small>Elapsed Time: {assistant_message[4] if assistant_message[4] else 'Unknown'} </small>
                     </div>
                     """, unsafe_allow_html=True)
+
 
 
