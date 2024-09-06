@@ -41,6 +41,11 @@ Base.metadata.create_all(engine)
 # Create a session factory
 Session = scoped_session(sessionmaker(bind=engine))
 
+# Initialize session state for login status
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+
 # Function to get conversation history
 def get_conversation_history():
     session = Session()
