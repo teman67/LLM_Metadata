@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime, timezone
 from dotenv import load_dotenv
+from .login import login
 import os
 
 # Load environment variables from .env file
@@ -53,6 +54,35 @@ def get_conversation_history():
     finally:
         session.close()
 
+def delete_conversation(conv_id):
+    session = Session()
+    try:
+        # Find the conversation to delete
+        user_message = session.query(Conversation).filter(Conversation.id == conv_id).first()
+
+        if user_message:
+            # Delete the user message and the next assistant message (if present)
+            assistant_message = session.query(Conversation).filter(
+                Conversation.timestamp > user_message.timestamp, 
+                Conversation.role == 'assistant'
+            ).first()
+
+            # Delete both messages
+            session.delete(user_message)
+            if assistant_message:
+                session.delete(assistant_message)
+
+            session.commit()
+            st.success("Message deleted successfully.")
+        else:
+            st.error("Message not found.")
+    except Exception as e:
+        session.rollback()
+        st.error(f"An error occurred: {e}")
+    finally:
+        session.close()
+
+
 # Function to display conversation history
 def display_conversation_history():
     page_bg_img = '''
@@ -73,36 +103,35 @@ def display_conversation_history():
     if not history:
         st.info("No conversation history found.")
     else:
-        colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
-        # Prepare a dictionary to hold user and assistant messages
         messages = {"user": [], "assistant": []}
 
-        # Organize messages into user and assistant lists, including model_name for assistants
         for conv in history:
             role = "user" if conv.role == "user" else "assistant"
             if role == "user":
-                messages["user"].append((conv.content, conv.timestamp))
+                messages["user"].append((conv.id, conv.content, conv.timestamp))
             else:
                 messages["assistant"].append((conv.content, conv.timestamp, conv.model_name, conv.token_usage, conv.elapsed_time))
 
-        # Determine the maximum number of messages between user and assistant
         max_len = max(len(messages["user"]), len(messages["assistant"]))
 
-        # Display messages side by side
         for i in range(max_len):
-            cols = st.columns(2)
-            user_message = messages["user"][i] if i < len(messages["user"]) else (None, None)
-            assistant_message = messages["assistant"][i] if i < len(messages["assistant"]) else (None, None, None)
-            
-            # Display user message
-            if user_message[0]:
+            cols = st.columns([4, 4, 2])  # Add extra column for the delete button
+            user_message = messages["user"][i] if i < len(messages["user"]) else (None, None, None)
+            assistant_message = messages["assistant"][i] if i < len(messages["assistant"]) else (None, None, None, None, None)
+
+            if user_message[1]:
                 cols[0].markdown(f"""
                     <div style="background-color: #ad6a5a; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                        <strong>User:</strong> {user_message[0]} <br> <small>Date and Time: {user_message[1]}</small>
+                        <strong>User:</strong> {user_message[1]} <br> <small>Date and Time: {user_message[2]}</small>
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Display assistant message with model name
+                if st.session_state.logged_in:  # Only show delete button if logged in
+                    if cols[2].button(f"Delete", key=f"del_{user_message[0]}"):
+                        delete_conversation(user_message[0])
+                        # st.experimental_rerun()  # Refresh the page after deletion
+                        
+
             if assistant_message[0]:
                 cols[1].markdown(f"""
                     <div style="background-color: #5aad78; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
@@ -113,6 +142,7 @@ def display_conversation_history():
                         <small>Elapsed Time: {assistant_message[4] if assistant_message[4] else 'Unknown'} </small>
                     </div>
                     """, unsafe_allow_html=True)
+
 
 
 
