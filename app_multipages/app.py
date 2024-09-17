@@ -6,6 +6,7 @@ st.set_page_config(page_title="MetaData Retrieval", page_icon=":star:", layout="
 
 # load pages scripts
 from app_pages.page_summary import page_summary_body
+from app_pages.page_register import registration_page
 from app_pages.page_LLM import *
 from app_pages.history import *
 
@@ -13,6 +14,7 @@ app = MultiPage(app_name="MetaData Retrieval")  # Create an instance of the app
 
 # Add your app pages here using .add_page()
 app.add_page("Quick Project Summary", page_summary_body)
+app.add_page("Registration Page", registration_page)
 app.add_page("Using LLM for MetaData Retrieval", main)
 app.add_page("History of Conversation", display_conversation_history)
 
