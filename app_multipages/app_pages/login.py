@@ -1,7 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-import time
 
 def login():
     # Initialize session state for login status if not already present
@@ -12,6 +11,14 @@ def login():
     if st.session_state.logged_in:
         # Skip the login form and show a message or redirect as needed
         st.write("You are already logged in!")
+        
+        # Display logout button
+        if st.button("Logout"):
+            st.session_state.logged_in = False
+            st.success("You have been logged out.")
+            # Rerun the app to reflect the updated state
+            st.rerun()
+        
         return True
 
     # Use st.empty() to manage the display of the title
@@ -36,10 +43,8 @@ def login():
                 st.session_state.logged_in = True
                 title_placeholder.empty()  # Clear the title on successful login
                 st.success("Login successful!")
-                # Optionally, use a method to redirect or update the UI
-                # st.experimental_rerun()  # Rerun the app to reflect the updated state
-                st.rerun()  # Trigger a rerun to apply the query parameter change
-                # return True
+                # Rerun the app to apply the change
+                st.rerun()
             else:
                 st.error("Invalid username or password")
 
