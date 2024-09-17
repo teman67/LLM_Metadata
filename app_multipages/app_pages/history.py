@@ -78,7 +78,7 @@ def delete_conversation(conv_id):
 
             session.commit()
             st.success("Message deleted successfully.")
-            st.rerun()  # Refresh the page after deletion
+            
         else:
             st.error("Message not found.")
     except Exception as e:
@@ -86,6 +86,7 @@ def delete_conversation(conv_id):
         st.error(f"An error occurred: {e}")
     finally:
         session.close()
+        st.rerun()  # Refresh the page after deletion
 
 # Function to display conversation history
 def display_conversation_history():
