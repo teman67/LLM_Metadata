@@ -71,7 +71,7 @@ def registration_page():
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
-        background-image: url("https://cdn.pixabay.com/photo/2019/12/16/04/06/binary-4698414_1280.jpg");
+        background-image: url("https://cdn.pixabay.com/photo/2019/12/16/04/05/binary-4698413_1280.jpg");
         background-size: cover;
         background-repeat: no-repeat;
         background-attachment: fixed;
