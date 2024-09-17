@@ -78,6 +78,7 @@ def delete_conversation(conv_id):
 
             session.commit()
             st.success("Message deleted successfully.")
+            st.rerun()  # Refresh the page after deletion
         else:
             st.error("Message not found.")
     except Exception as e:

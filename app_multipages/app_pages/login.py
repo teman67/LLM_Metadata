@@ -38,7 +38,8 @@ def login():
                 st.success("Login successful!")
                 # Optionally, use a method to redirect or update the UI
                 # st.experimental_rerun()  # Rerun the app to reflect the updated state
-                return True
+                st.rerun()  # Trigger a rerun to apply the query parameter change
+                # return True
             else:
                 st.error("Invalid username or password")
 
