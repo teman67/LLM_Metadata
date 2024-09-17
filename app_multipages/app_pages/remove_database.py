@@ -6,7 +6,9 @@ import os
 load_dotenv()
 
 # Get the PostgreSQL URL from the environment variables
-POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')
+POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')   ### to remove history conversation
+
+# POSTGRESQL_URL = os.getenv('POSTGRESQL_Pass_URL')   ### to remove user accounts
 
 # Define the database engine using the PostgreSQL URL
 engine = create_engine(POSTGRESQL_URL)
