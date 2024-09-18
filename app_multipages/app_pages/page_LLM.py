@@ -17,11 +17,11 @@ load_dotenv()
 # Get the PostgreSQL URL from the environment variables
 POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')
 
-# Debugging: Check if POSTGRESQL_URL is loaded
-if POSTGRESQL_URL is None:
-    raise ValueError("Error: POSTGRESQL_URL is missing or empty in the environment variables.")
-else:
-    print(f"Loaded POSTGRESQL_URL: {POSTGRESQL_URL}")
+# # Debugging: Check if POSTGRESQL_URL is loaded
+# if POSTGRESQL_URL is None:
+#     raise ValueError("Error: POSTGRESQL_URL is missing or empty in the environment variables.")
+# else:
+#     print(f"Loaded POSTGRESQL_URL: {POSTGRESQL_URL}")
 
 # Define the database engine using the PostgreSQL URL
 engine = create_engine(POSTGRESQL_URL)
