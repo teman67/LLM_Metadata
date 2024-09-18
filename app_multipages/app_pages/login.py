@@ -49,6 +49,8 @@ def login():
     # Initialize session state for login status if not already present
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
+    if "username" not in st.session_state:
+        st.session_state.username = None
 
     # Check if user is already logged in
     if st.session_state.logged_in:
@@ -58,6 +60,7 @@ def login():
         # Display logout button
         if st.button("Logout"):
             st.session_state.logged_in = False
+            st.session_state.username = None
             st.success("You have been logged out.")
             # Rerun the app to reflect the updated state
             st.rerun()
@@ -77,6 +80,7 @@ def login():
         if submit_button:
             if check_credentials(username, password):
                 st.session_state.logged_in = True
+                st.session_state.username = username  # Store the username in session state
                 title_placeholder.empty()  # Clear the title on successful login
                 st.success("Login successful!")
                 # Rerun the app to apply the change
@@ -85,6 +89,8 @@ def login():
                 st.error("Invalid username or password")
 
     return False
+
+
 
 # Example usage of login function in the main part of your Streamlit app
 if __name__ == "__main__":
