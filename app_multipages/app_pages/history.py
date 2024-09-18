@@ -34,6 +34,7 @@ class Conversation(Base):
     token_usage = Column(Integer, nullable=True)
     elapsed_time = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
+    username = Column(String, nullable=False)  # Add a username column to track conversations by user
 
 # Create the table if it doesn't exist
 Base.metadata.create_all(engine)
@@ -49,7 +50,8 @@ if "logged_in" not in st.session_state:
 def get_conversation_history():
     session = Session()
     try:
-        history = session.query(Conversation).order_by(Conversation.timestamp.desc()).all()
+        # Filter conversations by username
+        history = session.query(Conversation).filter(Conversation.username == st.session_state.username).order_by(Conversation.timestamp.desc()).all()
         return history
     except Exception as e:
         session.rollback()
@@ -58,17 +60,22 @@ def get_conversation_history():
     finally:
         session.close()
 
+
 def delete_conversation(conv_id):
     session = Session()
     try:
-        # Find the conversation to delete
-        user_message = session.query(Conversation).filter(Conversation.id == conv_id).first()
+        # Find the conversation to delete by username
+        user_message = session.query(Conversation).filter(
+            Conversation.id == conv_id,
+            Conversation.username == st.session_state.username  # Ensure ownership
+        ).first()
 
         if user_message:
             # Delete the user message and the next assistant message (if present)
             assistant_message = session.query(Conversation).filter(
                 Conversation.timestamp > user_message.timestamp, 
-                Conversation.role == 'assistant'
+                Conversation.role == 'assistant',
+                Conversation.username == st.session_state.username  # Ensure ownership
             ).first()
 
             # Delete both messages
@@ -80,13 +87,14 @@ def delete_conversation(conv_id):
             st.success("Message deleted successfully.")
             
         else:
-            st.error("Message not found.")
+            st.error("Message not found or you do not have permission to delete this message.")
     except Exception as e:
         session.rollback()
         st.error(f"An error occurred: {e}")
     finally:
         session.close()
         st.rerun()  # Refresh the page after deletion
+
 
 # Function to display conversation history
 def display_conversation_history():

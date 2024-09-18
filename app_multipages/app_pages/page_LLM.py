@@ -38,7 +38,7 @@ class Conversation(Base):
     token_usage = Column(Integer, nullable=True)
     elapsed_time = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
-    username = Column(String, nullable=False)  # Add this line
+    username = Column(String, nullable=False)  
 
 # Create the table if it doesn't exist
 Base.metadata.create_all(engine)
@@ -55,7 +55,7 @@ def save_message_to_db(role, content, model_name=None, elapsed_time=None, token_
             model_name=model_name, 
             elapsed_time=elapsed_time, 
             token_usage=token_usage,
-            username=st.session_state.username  # Add this line
+            username=st.session_state.username  
         )
         session.add(conversation)
         session.commit()
