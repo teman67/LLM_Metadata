@@ -13,10 +13,10 @@ from app_pages.history import *
 app = MultiPage(app_name="MetaData Retrieval")  # Create an instance of the app
 
 # Add your app pages here using .add_page()
-app.add_page("Quick Project Summary", page_summary_body)
-app.add_page("Registration Page", registration_page)
-app.add_page("Using Ollama LLM models", main)
-app.add_page("Showing the Conversations", display_conversation_history)
+app.add_page("Project Overview", page_summary_body)
+app.add_page("User Registration", registration_page)
+app.add_page("Explore Ollama Models", main)
+app.add_page("Chat History Overview", display_conversation_history)
 
 page_bg_img = '''
 <style>
