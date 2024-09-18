@@ -15,8 +15,8 @@ app = MultiPage(app_name="MetaData Retrieval")  # Create an instance of the app
 # Add your app pages here using .add_page()
 app.add_page("Quick Project Summary", page_summary_body)
 app.add_page("Registration Page", registration_page)
-app.add_page("Using LLM for MetaData Retrieval", main)
-app.add_page("History of Conversation", display_conversation_history)
+app.add_page("Using Ollama LLM models", main)
+app.add_page("Showing the Conversations", display_conversation_history)
 
 page_bg_img = '''
 <style>
