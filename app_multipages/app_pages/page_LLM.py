@@ -82,6 +82,23 @@ def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
+def compress_response(content, model, target_token_count):
+    # Start with a larger chunk size to compress in multiple iterations if needed
+    chunk_size = min(target_token_count * 2, len(content.split()))
+
+    while count_tokens(content) > target_token_count:
+        # Use a summarization prompt to compress the response
+        summary_prompt = f"Summarize the following text to approximately {target_token_count} tokens or less:\n\n{content[:chunk_size]}"
+        response = query_api(messages=[{"role": "user", "content": summary_prompt}], model=model, max_tokens=target_token_count)
+        
+        if 'error' in response:
+            return content  # Return the current content if there's an error
+        else:
+            content = response['content']
+            chunk_size = min(target_token_count, len(content.split()))  # Adjust chunk size for the next iteration
+    
+    return content
+
 def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
@@ -108,6 +125,10 @@ def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
                 response_tokens = count_tokens(response_content)
                 total_tokens = prompt_tokens + response_tokens
                 
+                # Check if the response exceeds max_tokens and compress if needed
+                if response_tokens > max_tokens:
+                    response_content = compress_response(response_content, model, max_tokens)
+                
                 return {
                     "response": response_json,
                     "elapsed_time": elapsed_time,
@@ -132,6 +153,7 @@ def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
             "elapsed_time": elapsed_time,
             "total_tokens": 0
         }
+
 
 
 
@@ -210,7 +232,7 @@ def main():
     # Add widgets for setting parameters
     st.sidebar.header("Model Parameters")
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=2000, value=300)
+    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=3000, value=300)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
 
     # The rest of your main app logic goes here...
