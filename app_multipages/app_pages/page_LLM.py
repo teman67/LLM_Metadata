@@ -10,12 +10,19 @@ from dotenv import load_dotenv
 import os
 import time
 from .login import login
+from pytz import timezone
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Get the PostgreSQL URL from the environment variables
 POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')
+
+# # Debugging: Check if POSTGRESQL_URL is loaded
+# if POSTGRESQL_URL is None:
+#     raise ValueError("Error: POSTGRESQL_URL is missing or empty in the environment variables.")
+# else:
+#     print(f"Loaded POSTGRESQL_URL: {POSTGRESQL_URL}")
 
 # Define the database engine using the PostgreSQL URL
 engine = create_engine(POSTGRESQL_URL)
@@ -31,7 +38,7 @@ class Conversation(Base):
     model_name = Column(String, nullable=True)
     token_usage = Column(Integer, nullable=True)
     elapsed_time = Column(Float, nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone('UTC')).astimezone(timezone('Europe/Berlin')).replace(microsecond=0))
     username = Column(String, nullable=False)  
 
 # Create the table if it doesn't exist
@@ -75,15 +82,15 @@ def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
-def query_api(messages, model, temperature=0.7, max_tokens=150, top_p=0.9):
+def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": temperature,  # Add temperature
-        "max_tokens": max_tokens,     # Add max_tokens
-        "top_p": top_p              # Add top_p
+        "temperature": tempreture,
+        "max_tokens": max_tokens,
+        "top_p": top_p
     }
 
     start_time = time.time()
@@ -126,6 +133,67 @@ def query_api(messages, model, temperature=0.7, max_tokens=150, top_p=0.9):
             "total_tokens": 0
         }
 
+
+
+def compare_models(messages, selected_model):
+    results = {}
+
+    st.write("### Model Comparison Results")
+    with st.spinner("Fetching responses from models..."):
+        result = query_api(messages=messages, model=selected_model)
+        results[selected_model] = result
+
+    cols = st.columns(1)
+    for idx, model in enumerate([selected_model]):
+        with cols[idx]:
+            st.write(f"**Model: {model}**")
+            if 'error' in results[model]:
+                st.error(results[model]['error'])
+            else:
+                response_content = results[model]['response']['choices'][0]['message']['content']
+                elapsed_time = results[model]['elapsed_time']
+                total_tokens = results[model]['total_tokens']
+                # Save response to the database with model details
+                save_message_to_db(
+                    role="assistant", 
+                    content=response_content, 
+                    model_name=model, 
+                    elapsed_time=elapsed_time, 
+                    token_usage=total_tokens
+                )
+                st.write(f"⏱ **Time taken:** {results[model]['elapsed_time']:.2f} seconds")
+                st.write(f"🔢 **Total tokens used:** {results[model]['total_tokens']}")
+                response_content = results[model]['response']['choices'][0]['message']['content']
+                st.subheader("Response from the Model:")
+                write(response_content)
+
+def display_conversation_history():
+    st.write("### Conversation History")
+    for idx, msg in enumerate(st.session_state.messages):
+        # Alternate colors based on the index
+        color = colors[idx % len(colors)]
+        role = "User" if msg['role'] == "user" else "Assistant"
+        st.markdown(f"""
+            <div style="background-color: {color}; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+                <strong>{role}:</strong> {msg['content']}
+            </div>
+            """, unsafe_allow_html=True)
+
+def download_conversation_history():
+    # Format the conversation history
+    history_text = ""
+    for msg in st.session_state.messages:
+        role = "User" if msg['role'] == "user" else "Assistant"
+        history_text += f"{role}: {msg['content']}\n\n"
+
+    # Provide a download button
+    st.download_button(
+        label="Download Conversation History",
+        data=history_text,
+        file_name="conversation_history.txt",
+        mime="text/plain"
+    )
+
 def main():
     # Ensure that session state variables are initialized at the very beginning
     if 'messages' not in st.session_state:
@@ -142,7 +210,7 @@ def main():
     # Add widgets for setting parameters
     st.sidebar.header("Model Parameters")
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=500, value=150)
+    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=2000, value=300)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
 
     # The rest of your main app logic goes here...
@@ -188,9 +256,10 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
+                # display_conversation_history()
                 
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
-                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
+                result = query_api(messages=api_messages, model=selected_model, tempreture=temperature, max_tokens=max_tokens, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
@@ -198,26 +267,29 @@ def main():
                     response = result['content']
                     elapsed_time = result['elapsed_time']
                     total_tokens = result['total_tokens']
+                    # Save assistant response with model info
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
+                    # Display results
                     st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
                     st.write(f"🔢 **Total tokens used:** {total_tokens}")
                     display_conversation_history()
                     
 
     with st.expander("💬 Ask a Question Directly"):
-        direct_question = st.text_area("Type your question here:", help="Enter any question you want to ask the LLM.")
-        language = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_direct")
-
-        if st.button("Submit Direct Question"):
+        direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
+        language_direct = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_direct")
+        
+        if st.button("Submit Question Directly"):
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                st.session_state.messages.append({"role": "user", "content": f"Question: {direct_question}\n\nPlease answer in {language}."})
-                save_message_to_db("user", f"Question: {direct_question}\n\nPlease answer in {language}.")
+                st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
+                save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
+                # display_conversation_history()
                 
-                api_messages = [{"role": "user", "content": f"Question: {direct_question}\n\nPlease answer in {language}."}]
-                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
+                api_messages = st.session_state.messages
+                result = query_api(messages=api_messages, model=selected_model, tempreture=temperature, max_tokens=max_tokens, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
@@ -225,26 +297,17 @@ def main():
                     response = result['content']
                     elapsed_time = result['elapsed_time']
                     total_tokens = result['total_tokens']
+                    # Save assistant response with model info
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
+                    # Display results
                     st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
                     st.write(f"🔢 **Total tokens used:** {total_tokens}")
                     display_conversation_history()
+                    
+                    
+    # Add the download button for conversation history
+    download_conversation_history()
 
-def display_conversation_history():
-    """Displays the conversation history in alternating colored boxes."""
-    for idx, message in enumerate(st.session_state.messages):
-        role = message["role"]
-        content = message["content"]
-        color = colors[idx % len(colors)]
-        with st.container():
-            st.markdown(
-                f"""
-                <div style="background-color: {color}; padding: 10px; border-radius: 10px;">
-                    <strong>{role.capitalize()}:</strong> {content}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
 if __name__ == "__main__":
     main()
