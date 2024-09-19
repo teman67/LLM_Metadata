@@ -2,6 +2,20 @@ import streamlit as st
 import json
 
 def json_viewer():
+
+    page_bg_img = '''
+    <style>
+    [data-testid="stApp"]{
+        background-image: url("https://cdn.pixabay.com/photo/2022/12/09/03/51/big-data-7644530_1280.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: white;
+    }
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+    
     st.title("JSON File Visualizer and Editor")
 
     # File uploader for JSON file
