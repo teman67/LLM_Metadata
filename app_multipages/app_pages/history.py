@@ -177,7 +177,7 @@ def display_conversation_history():
             if user_message[1]:
                 cols[0].markdown(f"""
                     <div style="background-color: #ad6a5a; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                        <strong>User:</strong> {user_message[1]} <br> <small>Date and Time: {user_message[2]}</small>
+                        <strong>User:</strong> {user_message[1]} <br> <small>Date and Time in UTC: {user_message[2]}</small>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -190,7 +190,7 @@ def display_conversation_history():
                 cols[1].markdown(f"""
                     <div style="background-color: #5aad78; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
                         <strong>Assistant:</strong> {assistant_message[0]} <br> 
-                        <small>Date and Time: {assistant_message[1]}</small><br>
+                        <small>Date and Time in UTC: {assistant_message[1]}</small><br>
                         <small>Model: {assistant_message[2] if assistant_message[2] else 'Unknown'}</small><br>
                         <small>Token_usage: {assistant_message[3] if assistant_message[3] else 'Unknown'} </small> ---
                         <small>Elapsed Time: {assistant_message[4] if assistant_message[4] else 'Unknown'} </small>
