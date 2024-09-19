@@ -153,6 +153,10 @@ def display_conversation_history():
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
+    if not st.session_state.logged_in or not st.session_state.username:
+        st.warning("Please log in to view your conversation history.")
+        return
+
     st.write("### Conversation History")
     history = get_conversation_history()
     if not history:
