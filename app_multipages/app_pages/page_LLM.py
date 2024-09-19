@@ -83,21 +83,28 @@ def count_tokens(text):
     return len(text.split())
 
 def compress_response(content, model, target_token_count):
-    # Start with a larger chunk size to compress in multiple iterations if needed
-    chunk_size = min(target_token_count * 2, len(content.split()))
+    """Compresses the response to fit within the target token count while trying to maintain coherence."""
+    def split_content(content, chunk_size):
+        """Splits content into chunks of specified size."""
+        return [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
 
-    while count_tokens(content) > target_token_count:
-        # Use a summarization prompt to compress the response
-        summary_prompt = f"Summarize the following text to approximately {target_token_count} tokens or less:\n\n{content[:chunk_size]}"
+    chunk_size = min(target_token_count * 2, len(content.split()))
+    chunks = split_content(content, chunk_size)
+    compressed_content = ""
+    
+    for chunk in chunks:
+        summary_prompt = f"Summarize the following text to approximately {target_token_count} tokens or less:\n\n{chunk}"
         response = query_api(messages=[{"role": "user", "content": summary_prompt}], model=model, max_tokens=target_token_count)
         
         if 'error' in response:
             return content  # Return the current content if there's an error
-        else:
-            content = response['content']
-            chunk_size = min(target_token_count, len(content.split()))  # Adjust chunk size for the next iteration
+        
+        compressed_content += response['content'] + " "
+        if count_tokens(compressed_content) >= target_token_count:
+            break
     
-    return content
+    return compressed_content.strip()
+
 
 def query_api(messages, model, temperature=0.7, max_tokens=300, top_p=0.9):
     url = os.getenv('API_URL')
@@ -121,13 +128,13 @@ def query_api(messages, model, temperature=0.7, max_tokens=300, top_p=0.9):
             choice = response_json['choices'][0]
             if 'message' in choice and 'content' in choice['message']:
                 response_content = choice['message']['content']
-                prompt_tokens = count_tokens('\n'.join([msg['content'] for msg in messages]))
                 response_tokens = count_tokens(response_content)
-                total_tokens = prompt_tokens + response_tokens
                 
-                # Check if the response exceeds max_tokens and compress if needed
                 if response_tokens > max_tokens:
                     response_content = compress_response(response_content, model, max_tokens)
+                
+                prompt_tokens = count_tokens('\n'.join([msg['content'] for msg in messages]))
+                total_tokens = prompt_tokens + response_tokens
                 
                 return {
                     "response": response_json,
@@ -162,8 +169,9 @@ def query_api(messages, model, temperature=0.7, max_tokens=300, top_p=0.9):
             "total_tokens": 0
         }
 
-
-
+def display_response(response_content):
+    st.subheader("Response from the Model:")
+    st.write(response_content)
 
 
 def compare_models(messages, selected_model):
