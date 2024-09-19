@@ -99,13 +99,13 @@ def compress_response(content, model, target_token_count):
     
     return content
 
-def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
+def query_api(messages, model, temperature=0.7, max_tokens=300, top_p=0.9):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": tempreture,
+        "temperature": temperature,
         "max_tokens": max_tokens,
         "top_p": top_p
     }
@@ -132,6 +132,8 @@ def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
                 return {
                     "response": response_json,
                     "elapsed_time": elapsed_time,
+                    "prompt_tokens": prompt_tokens,
+                    "response_tokens": response_tokens,
                     "total_tokens": total_tokens,
                     "content": response_content
                 }
@@ -139,20 +141,27 @@ def query_api(messages, model, tempreture=0.7, max_tokens=300, top_p=0.9):
                 return {
                     "error": "API response missing 'message' or 'content' key",
                     "elapsed_time": elapsed_time,
+                    "prompt_tokens": 0,
+                    "response_tokens": 0,
                     "total_tokens": 0
                 }
         else:
             return {
                 "error": "API response missing 'choices' key or empty 'choices'",
                 "elapsed_time": elapsed_time,
+                "prompt_tokens": 0,
+                "response_tokens": 0,
                 "total_tokens": 0
             }
     else:
         return {
             "error": f"Failed with status code {response.status_code}",
             "elapsed_time": elapsed_time,
+            "prompt_tokens": 0,
+            "response_tokens": 0,
             "total_tokens": 0
         }
+
 
 
 
@@ -172,22 +181,22 @@ def compare_models(messages, selected_model):
             if 'error' in results[model]:
                 st.error(results[model]['error'])
             else:
-                response_content = results[model]['response']['choices'][0]['message']['content']
+                response_content = results[model]['content']
                 elapsed_time = results[model]['elapsed_time']
-                total_tokens = results[model]['total_tokens']
+                response_tokens = results[model]['response_tokens']
                 # Save response to the database with model details
                 save_message_to_db(
                     role="assistant", 
                     content=response_content, 
                     model_name=model, 
                     elapsed_time=elapsed_time, 
-                    token_usage=total_tokens
+                    token_usage=response_tokens
                 )
-                st.write(f"⏱ **Time taken:** {results[model]['elapsed_time']:.2f} seconds")
-                st.write(f"🔢 **Total tokens used:** {results[model]['total_tokens']}")
-                response_content = results[model]['response']['choices'][0]['message']['content']
+                st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
+                st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
                 st.subheader("Response from the Model:")
                 write(response_content)
+
 
 def display_conversation_history():
     st.write("### Conversation History")
@@ -217,7 +226,6 @@ def download_conversation_history():
     )
 
 def main():
-    # Ensure that session state variables are initialized at the very beginning
     if 'messages' not in st.session_state:
         st.session_state.messages = []
     if 'file_content' not in st.session_state:
@@ -225,17 +233,14 @@ def main():
     if 'warning_shown' not in st.session_state:
         st.session_state.warning_shown = False
 
-    # Add login check
     if not login():
-        return  # Stop the app if the user is not logged in
+        return
 
-    # Add widgets for setting parameters
     st.sidebar.header("Model Parameters")
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
     max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=3000, value=300)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
 
-    # The rest of your main app logic goes here...
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
@@ -259,7 +264,7 @@ def main():
 
     with st.expander("📄 Upload a File and Ask a Question"):
         uploaded_file = st.file_uploader("Choose a file", type=["txt", "docx", "json", "dat"])
-        
+
         if uploaded_file is not None:
             try:
                 st.session_state.file_content = uploaded_file.read().decode("utf-8")
@@ -278,25 +283,21 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
                 save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
-                # display_conversation_history()
                 
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
-                result = query_api(messages=api_messages, model=selected_model, tempreture=temperature, max_tokens=max_tokens, top_p=top_p)
+                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
                 else:                                   
                     response = result['content']
                     elapsed_time = result['elapsed_time']
-                    total_tokens = result['total_tokens']
-                    # Save assistant response with model info
+                    response_tokens = result['response_tokens']
                     st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
-                    # Display results
+                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
                     st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used:** {total_tokens}")
+                    st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
                     display_conversation_history()
-                    
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
@@ -308,28 +309,24 @@ def main():
             else:
                 st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
                 save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
-                # display_conversation_history()
                 
                 api_messages = st.session_state.messages
-                result = query_api(messages=api_messages, model=selected_model, tempreture=temperature, max_tokens=max_tokens, top_p=top_p)
+                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
                 else:
                     response = result['content']
                     elapsed_time = result['elapsed_time']
-                    total_tokens = result['total_tokens']
-                    # Save assistant response with model info
+                    response_tokens = result['response_tokens']
                     st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=total_tokens)
-                    # Display results
+                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
                     st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used:** {total_tokens}")
+                    st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
                     display_conversation_history()
-                    
-                    
-    # Add the download button for conversation history
+
     download_conversation_history()
 
 if __name__ == "__main__":
     main()
+
