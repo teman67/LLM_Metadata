@@ -18,12 +18,6 @@ load_dotenv()
 # Get the PostgreSQL URL from the environment variables
 POSTGRESQL_URL = os.getenv('POSTGRESQL_URL')
 
-# # Debugging: Check if POSTGRESQL_URL is loaded
-# if POSTGRESQL_URL is None:
-#     raise ValueError("Error: POSTGRESQL_URL is missing or empty in the environment variables.")
-# else:
-#     print(f"Loaded POSTGRESQL_URL: {POSTGRESQL_URL}")
-
 # Define the database engine using the PostgreSQL URL
 engine = create_engine(POSTGRESQL_URL)
 Base = declarative_base()
@@ -75,8 +69,6 @@ if 'file_content' not in st.session_state:
 # Predefined list of colors for alternating boxes
 colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c1416"]
 
-# List of available models
-models = ['mixtral:latest', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
 
 def count_tokens(text):
     """Simple function to count tokens based on whitespace."""
@@ -93,7 +85,7 @@ def compress_response(content, model, target_token_count):
     compressed_content = ""
     
     for chunk in chunks:
-        summary_prompt = f"Summarize the following text to approximately {target_token_count} tokens or less:\n\n{chunk}"
+        summary_prompt = f"Summarize the following text to approximately {target_token_count} tokens or less, making sure to keep the response coherent and complete:\n\n{chunk}"
         response = query_api(messages=[{"role": "user", "content": summary_prompt}], model=model, max_tokens=target_token_count)
         
         if 'error' in response:
@@ -103,8 +95,13 @@ def compress_response(content, model, target_token_count):
         if count_tokens(compressed_content) >= target_token_count:
             break
     
-    return compressed_content.strip()
+    # Ensure the response ends with a coherent conclusion if necessary
+    if count_tokens(compressed_content) < target_token_count:
+        final_summary_prompt = f"Please provide a final, coherent summary of the following text to complete the response:\n\n{compressed_content}"
+        final_summary = query_api(messages=[{"role": "user", "content": final_summary_prompt}], model=model, max_tokens=target_token_count - count_tokens(compressed_content))
+        compressed_content += final_summary.get('content', '')
 
+    return compressed_content.strip()
 
 def query_api(messages, model, temperature=0.7, max_tokens=600, top_p=0.9):
     url = os.getenv('API_URL')
@@ -173,7 +170,6 @@ def display_response(response_content):
     st.subheader("Response from the Model:")
     st.write(response_content)
 
-
 def compare_models(messages, selected_model):
     results = {}
 
@@ -204,7 +200,6 @@ def compare_models(messages, selected_model):
                 st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
                 st.subheader("Response from the Model:")
                 write(response_content)
-
 
 def display_conversation_history():
     st.write("### Conversation History")
@@ -248,6 +243,10 @@ def main():
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
     max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=4000, value=600)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
+    # List of available models
+    models = ['mixtral:latest', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
+    # Create a sidebar with a selectbox for model selection
+    selected_model = st.sidebar.selectbox('Select a LLM model', models)
 
     page_bg_img = '''
     <style>
@@ -265,7 +264,7 @@ def main():
     st.header("Choose How to Ask Your Question")
     st.write("Explore the options below to either upload a file and ask a related question, or simply ask a question directly.")
 
-    selected_model = st.selectbox("Select LLM Model:", models)
+    # selected_model = st.selectbox("Select LLM Model:", models)
 
     languages = ["English", "German"]
     default_language = "English"
@@ -334,5 +333,4 @@ def main():
                     display_conversation_history()
 
     download_conversation_history()
-
 
