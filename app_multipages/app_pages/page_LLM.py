@@ -106,7 +106,7 @@ def compress_response(content, model, target_token_count):
     return compressed_content.strip()
 
 
-def query_api(messages, model, temperature=0.7, max_tokens=300, top_p=0.9):
+def query_api(messages, model, temperature=0.7, max_tokens=600, top_p=0.9):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
@@ -246,7 +246,7 @@ def main():
 
     st.sidebar.header("Model Parameters")
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=3000, value=300)
+    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=4000, value=600)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
 
     page_bg_img = '''
