@@ -103,7 +103,7 @@ def compress_response(content, model, target_token_count):
 
     return compressed_content.strip()
 
-def query_api(messages, model, temperature=0.7, max_tokens=600, top_p=0.9):
+def query_api(messages, model, temperature=0.7, max_tokens=600, top_k=40, top_p=0.9):
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
@@ -111,6 +111,7 @@ def query_api(messages, model, temperature=0.7, max_tokens=600, top_p=0.9):
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "top_k": top_k,
         "top_p": top_p
     }
 
@@ -240,8 +241,10 @@ def main():
         return
 
     st.sidebar.header("Model Parameters")
+    st.sidebar.write("Adjust the model parameters below to customize the response generation. See [Ollama Python Package](https://pypi.org/project/ollama-python/) for more details.")
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
     max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=4000, value=600)
+    top_k = st.sidebar.number_input("Top-k", min_value=1, max_value=100, value=40)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
     # List of available models
     models = ['mixtral:latest', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
@@ -292,7 +295,7 @@ def main():
                 save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
                 
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
-                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
+                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
@@ -318,7 +321,7 @@ def main():
                 save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
                 
                 api_messages = st.session_state.messages
-                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_p=top_p)
+                result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
                 
                 if 'error' in result:
                     st.error(result['error'])
