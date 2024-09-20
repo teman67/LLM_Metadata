@@ -242,9 +242,11 @@ def main():
 
     st.sidebar.header("Model Parameters")
     st.sidebar.write("Adjust the model parameters below to customize the response generation. See [Ollama Python Package](https://pypi.org/project/ollama-python/) for more details.")
+    max_tokens = st.sidebar.slider("Max Tokens", 1, 5000, 600)
+    # max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=4000, value=600)
     temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.sidebar.number_input("Max Tokens", min_value=1, max_value=4000, value=600)
-    top_k = st.sidebar.number_input("Top-k", min_value=1, max_value=100, value=40)
+    top_k = st.sidebar.slider("Top-k", 1, 100, 40)
+    # top_k = st.sidebar.number_input("Top-k", min_value=1, max_value=100, value=40)
     top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9)
     # List of available models
     models = ['mixtral:latest', 'llama3.1:latest', 'llama3.1:70b', 'llama3.1:70b-instruct-q8_0']
