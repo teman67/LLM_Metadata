@@ -21,6 +21,16 @@ Base = declarative_base()
 
 # Define the User model
 class User(Base):
+    """
+    Represents the user model for storing user account information in the database.
+
+    Attributes:
+    - id: An integer primary key that uniquely identifies each user.
+    - username: A unique string representing the username of the user.
+    - password: A string to store the hashed password of the user.
+    - email: A unique string representing the email address of the user.
+    """
+
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, unique=True, nullable=False)
@@ -35,6 +45,15 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Dependency for getting a new session
 def get_db():
+    """
+    Dependency function to provide a new database session.
+
+    Yields:
+    - A session (db) to interact with the database.
+    
+    Ensures that the session is closed after its use.
+    """
+
     db = SessionLocal()
     try:
         yield db
@@ -42,6 +61,20 @@ def get_db():
         db.close()
 
 def register_user(username, password, email):
+    """
+    Registers a new user in the database by hashing the password and ensuring the uniqueness
+    of the username and email.
+
+    Args:
+    - username: The username provided by the user.
+    - password: The plaintext password provided by the user.
+    - email: The email address provided by the user.
+
+    Returns:
+    - True if the registration is successful, meaning the username and email are unique.
+    - False if the username or email already exists in the database.
+    """
+
     # Hash the password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     
@@ -62,12 +95,31 @@ def register_user(username, password, email):
     return True
 
 def is_valid_email(email):
+    """
+    Validates the email format using the `parseaddr` function.
+
+    Args:
+    - email: The email address to validate.
+
+    Returns:
+    - True if the email is valid (contains '@').
+    - False if the email is invalid.
+    """
+
     """Check if the email address is valid."""
     return '@' in parseaddr(email)[1]
 
 def registration_page():
+    """
+    Displays the user registration page in a Streamlit app.
 
-# The rest of your main app logic goes here...
+    Features:
+    - Allows users to input their username, password, and email.
+    - Validates that all fields are filled and that the email is in the correct format.
+    - Registers the user if the input is valid and the username or email does not already exist.
+    - Shows success or error messages based on the registration outcome.
+    """
+
     page_bg_img = '''
     <style>
     [data-testid="stApp"]{
