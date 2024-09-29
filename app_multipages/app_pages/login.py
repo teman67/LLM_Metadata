@@ -22,6 +22,16 @@ Base = declarative_base()
 
 # Define the User model
 class User(Base):
+    """
+    ORM model representing the 'users' table in the PostgreSQL database.
+
+    Columns:
+    - id (Integer, primary key): Unique identifier for each user.
+    - username (String, unique, non-nullable): The username of the user (must be unique).
+    - password (String, non-nullable): The hashed password of the user.
+    - email (String, unique, non-nullable): The email address of the user (must be unique).
+    """
+
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, unique=True, nullable=False)
@@ -32,6 +42,15 @@ class User(Base):
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
+    """
+    Provides a database session for querying the PostgreSQL database.
+
+    Yields:
+    - db (Session): An active database session.
+
+    After the function finishes, the database session is closed to ensure proper resource handling.
+    """
+
     db = SessionLocal()
     try:
         yield db
@@ -39,6 +58,20 @@ def get_db():
         db.close()
 
 def check_credentials(username, password):
+    """
+    Verifies if the provided username and password match a record in the database.
+
+    Parameters:
+    - username (str): The username input by the user.
+    - password (str): The password input by the user.
+
+    Returns:
+    - bool: True if the username and password combination is correct, False otherwise.
+
+    Hashing:
+    - The password is hashed using SHA-256 before comparison with the stored hashed password in the database.
+    """
+
     """Check if the provided username and password are correct."""
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     db = next(get_db())
@@ -46,6 +79,27 @@ def check_credentials(username, password):
     return user is not None
 
 def login():
+    """
+    Manages the login process for the Streamlit app.
+
+    Features:
+    - Displays a login form where users can input their username and password.
+    - Verifies credentials using the `check_credentials` function.
+    - Stores the login status and username in Streamlit's session state.
+
+    Behavior:
+    - If the user is already logged in, a message is displayed with the option to log out.
+    - If login is successful, a success message is shown, and the user is logged in.
+    - If login fails, an error message is shown.
+
+    Returns:
+    - bool: True if the user is logged in, False otherwise.
+
+    Session State:
+    - `logged_in`: Tracks whether the user is logged in (True or False).
+    - `username`: Stores the logged-in user's username.
+    """
+
     # Initialize session state for login status if not already present
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
@@ -94,5 +148,15 @@ def login():
 
 # Example usage of login function in the main part of your Streamlit app
 if __name__ == "__main__":
+    """
+    Main function to check if the user is logged in and display content accordingly.
+    
+    If the user is logged in:
+    - A welcome message is displayed.
+    
+    If the user is not logged in:
+    - The login form is displayed.
+    """
+
     if login():
         st.write("Welcome to the app!")  # Content for logged-in users
