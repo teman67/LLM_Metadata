@@ -25,6 +25,20 @@ Base = declarative_base()
 
 # Define the Conversation model
 class Conversation(Base):
+    """
+    ORM model representing the 'conversations' table in the PostgreSQL database.
+
+    Columns:
+    - id (Integer, primary key): Unique identifier for each conversation entry.
+    - role (String): Specifies the role of the message ('user' or 'assistant').
+    - content (Text): Stores the content of the message.
+    - model_name (String): Name of the model that generated the assistant's response (nullable).
+    - token_usage (Integer): Number of tokens used in the assistant's response (nullable).
+    - elapsed_time (Float): Time taken to generate the response (nullable).
+    - timestamp (DateTime): Timestamp when the message was created (defaults to UTC).
+    - username (String): Username of the user associated with the conversation.
+    """
+
     __tablename__ = 'conversations'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -48,6 +62,16 @@ if "logged_in" not in st.session_state:
 
 # Function to get conversation history
 def get_conversation_history():
+    """
+    Retrieves the conversation history for the currently logged-in user from the PostgreSQL database.
+
+    Returns:
+    - List of `Conversation` objects filtered by the current user's username, ordered by timestamp in descending order.
+    
+    Error Handling:
+    - If an error occurs during the database query, a rollback is performed, and an error message is displayed.
+    """
+
     session = Session()
     try:
         # Filter conversations by username
@@ -62,6 +86,25 @@ def get_conversation_history():
 
 
 def delete_conversation(conv_id):
+    """
+    Deletes a user conversation and its corresponding assistant response from the database.
+
+    Parameters:
+    - conv_id (int): The unique ID of the user message to be deleted.
+
+    Behavior:
+    - Deletes both the user message and the following assistant message if present.
+    - Ensures that only the owner of the conversation (based on the username) can delete messages.
+
+    Error Handling:
+    - If the message is not found or if the user does not have permission, an error message is displayed.
+    - Rolls back the session in case of exceptions.
+    
+    UI:
+    - Displays success or error messages based on the operation.
+    - Calls `st.rerun()` to refresh the Streamlit page after deletion.
+    """
+
     session = Session()
     try:
         # Find the conversation to delete by username
@@ -98,6 +141,23 @@ def delete_conversation(conv_id):
 
 # Function to display conversation history
 def display_conversation_history():
+    """
+    Displays the conversation history for the currently logged-in user in the Streamlit app.
+
+    Functionality:
+    - Shows a loading spinner for 2 seconds while fetching data.
+    - Applies custom background styling using HTML and CSS.
+    - Displays user and assistant messages side by side with the option to delete the user message.
+    - Ensures only logged-in users can view the conversation history.
+
+    Session State:
+    - Uses Streamlit's session state to track login status and messages.
+
+    Notes:
+    - The conversation history is displayed in reverse chronological order.
+    - If there is no history, an info message is displayed.
+    """
+
     # Ensure that session state variables are initialized at the very beginning
     if 'messages' not in st.session_state:
         st.session_state.messages = []
