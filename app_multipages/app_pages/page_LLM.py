@@ -24,6 +24,20 @@ Base = declarative_base()
 
 # Define the Conversation model
 class Conversation(Base):
+    """
+    Represents a conversation message stored in the database.
+
+    Attributes:
+        id (int): Primary key, autoincremented.
+        role (str): Role of the speaker (e.g., user or assistant).
+        content (str): The message content.
+        model_name (str): Name of the model used to generate the response.
+        token_usage (int): Number of tokens used in the response.
+        elapsed_time (float): Time taken to generate the response.
+        timestamp (datetime): Timestamp of when the message was created.
+        username (str): Username of the user who initiated the conversation.
+    """
+
     __tablename__ = 'conversations'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -42,6 +56,17 @@ Base.metadata.create_all(engine)
 SessionFactory = sessionmaker(bind=engine)
 
 def save_message_to_db(role, content, model_name=None, elapsed_time=None, token_usage=None):
+    """
+    Saves a message to the database.
+
+    Args:
+        role (str): The role of the speaker (e.g., user or assistant).
+        content (str): The content of the message.
+        model_name (str, optional): The name of the model used for the response.
+        elapsed_time (float, optional): Time taken to generate the response.
+        token_usage (int, optional): Number of tokens used in the response.
+    """
+
     session = SessionFactory()
     try:
         conversation = Conversation(
@@ -71,10 +96,32 @@ colors = ["#fc9642", "#5aad78", "#416a96", "#8f894a", "#9e3c72", "#7e5dc2", "#8c
 
 
 def count_tokens(text):
+    """
+    Counts the number of tokens in a text based on whitespace.
+
+    Args:
+        text (str): The input text.
+
+    Returns:
+        int: Number of tokens in the text.
+    """
+
     """Simple function to count tokens based on whitespace."""
     return len(text.split())
 
 def compress_response(content, model, target_token_count):
+    """
+    Compresses a response to fit within the target token count while keeping coherence.
+
+    Args:
+        content (str): The original response content.
+        model (str): The model used for generating responses.
+        target_token_count (int): The desired number of tokens.
+
+    Returns:
+        str: The compressed response.
+    """
+
     """Compresses the response to fit within the target token count while trying to maintain coherence."""
     def split_content(content, chunk_size):
         """Splits content into chunks of specified size."""
@@ -104,6 +151,21 @@ def compress_response(content, model, target_token_count):
     return compressed_content.strip()
 
 def query_api(messages, model, temperature=0.7, max_tokens=600, top_k=40, top_p=0.9):
+    """
+    Queries an external API to get a response based on provided messages and model.
+
+    Args:
+        messages (list): List of message dictionaries.
+        model (str): The model to be used.
+        temperature (float, optional): The randomness in the response.
+        max_tokens (int, optional): Maximum number of tokens in the response.
+        top_k (int, optional): Limits the sampling pool to the top-k tokens.
+        top_p (float, optional): Nucleus sampling for choosing from the top tokens.
+
+    Returns:
+        dict: API response data, including content, token usage, and errors (if any).
+    """
+
     url = os.getenv('API_URL')
     headers = {"Authorization": f"Bearer {'API_KEY'}"}
     payload = {
@@ -168,10 +230,25 @@ def query_api(messages, model, temperature=0.7, max_tokens=600, top_k=40, top_p=
         }
 
 def display_response(response_content):
+    """
+    Displays the model's response in the Streamlit app.
+
+    Args:
+        response_content (str): The content of the response.
+    """
+
     st.subheader("Response from the Model:")
     st.write(response_content)
 
 def compare_models(messages, selected_model):
+    """
+    Fetches and compares responses from different models.
+
+    Args:
+        messages (list): List of user input messages.
+        selected_model (str): The model to be compared.
+    """
+
     results = {}
 
     st.write("### Model Comparison Results")
@@ -203,6 +280,10 @@ def compare_models(messages, selected_model):
                 write(response_content)
 
 def display_conversation_history():
+    """
+    Displays the conversation history stored in session state.
+    """
+
     st.write("### Conversation History")
     for idx, msg in enumerate(st.session_state.messages):
         # Alternate colors based on the index
@@ -215,6 +296,10 @@ def display_conversation_history():
             """, unsafe_allow_html=True)
 
 def download_conversation_history():
+    """
+    Provides a download option for the conversation history as a text file.
+    """
+
     # Format the conversation history
     history_text = ""
     for msg in st.session_state.messages:
@@ -230,6 +315,11 @@ def download_conversation_history():
     )
 
 def main():
+    """
+    Main function for the Streamlit app, handling user input, model selection, 
+    and response generation.
+    """
+
     if 'messages' not in st.session_state:
         st.session_state.messages = []
     if 'file_content' not in st.session_state:
