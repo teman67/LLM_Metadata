@@ -2,6 +2,27 @@ import streamlit as st
 import json
 
 def json_viewer():
+    """
+    A Streamlit-based JSON file visualizer and editor.
+
+    Features:
+    - Displays a custom background image using CSS.
+    - Allows users to upload a JSON file for viewing and editing.
+    - Displays the uploaded JSON file in raw format.
+    - If the JSON file is a list of dictionaries, it can also be displayed as a table.
+    - Provides an editable text area for modifying the JSON content.
+    - Validates the edited JSON and provides a download button for the modified file.
+
+    Functionality:
+    - File uploader: Allows users to upload a JSON file.
+    - Raw JSON Display: Shows the uploaded JSON data in a readable format.
+    - Editable JSON: Provides a text area to edit the uploaded JSON content.
+    - Download Edited JSON: Users can download the edited JSON file.
+
+    Error Handling:
+    - Catches `json.JSONDecodeError` to handle invalid JSON format in both uploaded and edited files.
+    """
+
 
     page_bg_img = '''
     <style>
