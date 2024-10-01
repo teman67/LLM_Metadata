@@ -314,6 +314,13 @@ def download_conversation_history():
         mime="text/plain"
     )
 
+
+predefined_prompt = (
+    "Create a non-populated metadata schema for a tensile test using the uploaded raw data. "
+    "The metadata schema should follow JSON schema standards, as documented in https://json-schema.org/"
+)
+
+
 def main():
     """
     Main function for the Streamlit app, handling user input, model selection, 
@@ -374,7 +381,22 @@ def main():
             except Exception as e:
                 st.error(f"An error occurred while reading the file: {e}")
 
-        user_question_file = st.text_area("Ask a question about the uploaded file:", help="Enter a question related to the content of the uploaded file.")
+        # Add a checkbox for using the predefined prompt
+        use_predefined_prompt = st.checkbox("Use predefined prompt for metadata schema", value=False)
+
+        # Predefined prompt text
+        predefined_prompt = (
+            "Create a non-populated metadata schema for a tensile test using the uploaded row data. "
+            "The metadata schema should follow JSON schema standards, as documented in https://json-schema.org/"
+        )
+
+        # Populate the text area based on the checkbox selection
+        user_question_file = st.text_area(
+            "Ask a question about the uploaded file:", 
+            value=predefined_prompt if use_predefined_prompt else "", 
+            help="Enter a question related to the content of the uploaded file."
+        )
+
         language = st.selectbox("Select the language for the answer:", languages, index=languages.index(default_language), key="language_file")
 
         if st.button("Submit Question about Uploaded File"):
@@ -383,8 +405,8 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                st.session_state.messages.append({"role": "user", "content": f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}."})
-                save_message_to_db("user", f"Question about the uploaded file: {user_question_file}\n\nPlease answer in {language}.")
+                st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."})
+                save_message_to_db("user", f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}.")
                 
                 api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
                 result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
@@ -400,6 +422,7 @@ def main():
                     st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
                     st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
                     display_conversation_history()
+
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
