@@ -431,9 +431,8 @@ def main():
                     st.markdown("❌ Unable to connect to the model. Please contact admin: amirhossein.bayani@gmail.com", unsafe_allow_html=True)
                     print(f"Connection error: {e}")
                 except Exception as e:
-                    st.error(f"❌ An unexpected error occurred: {e}")
-                    print(f"Unexpected error: {e}") 
-
+                    st.error("❌ Unable to connect to the model. Please contact admin: amirhossein.bayani@gmail.com")
+                    
 
     with st.expander("💬 Ask a Question Directly"):
         direct_question = st.text_area("Type your question here:", help="Enter any question you have.")
@@ -443,7 +442,8 @@ def main():
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                api_messages = st.session_state.messages
+                
+                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."}]
                 try:
 
                     result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
@@ -471,10 +471,9 @@ def main():
                     st.markdown("❌ Unable to connect to the model. Please contact admin: amirhossein.bayani@gmail.com", unsafe_allow_html=True)
                     print(f"Connection error: {e}")
                 except Exception as e:
-                    st.error(f"❌ An unexpected error occurred: {e}")
-                    print(f"Unexpected error: {e}")
+                    st.error("❌ Unable to connect to the model. Please contact admin: amirhossein.bayani@gmail.com")
+        
 
 
     download_conversation_history()
-
 
