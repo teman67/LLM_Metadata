@@ -405,23 +405,25 @@ def main():
             elif user_question_file.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."})
-                save_message_to_db("user", f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}.")
-                
-                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\nQuestion: {user_question_file}\n\nPlease answer in {language}."}]
+                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."}]
                 result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
-                
+
                 if 'error' in result:
                     st.error(result['error'])
-                else:                                   
+                else:
                     response = result['content']
                     elapsed_time = result['elapsed_time']
                     response_tokens = result['response_tokens']
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
-                    st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
-                    display_conversation_history()
+                    st.session_state.messages.append({"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."})
+                    save_message_to_db("user", f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}.")
+                    
+                    # Save the assistant's response if there is one
+                    if response:
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
+                        st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
+                        st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
+                        display_conversation_history()
 
 
     with st.expander("💬 Ask a Question Directly"):
@@ -432,23 +434,28 @@ def main():
             if direct_question.strip() == "":
                 st.warning("Please enter a question.")
             else:
-                st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
-                save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
-                
                 api_messages = st.session_state.messages
                 result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
-                
+
                 if 'error' in result:
                     st.error(result['error'])
                 else:
                     response = result['content']
                     elapsed_time = result['elapsed_time']
                     response_tokens = result['response_tokens']
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
-                    st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
-                    st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
-                    display_conversation_history()
+                    
+                    # Save the user input if a response is received
+                    st.session_state.messages.append({"role": "user", "content": f"{direct_question}\n\nPlease answer in {language_direct}."})
+                    save_message_to_db("user", f"{direct_question}\n\nPlease answer in {language_direct}.")
+
+                    # Save the assistant's response if there is one
+                    if response:
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        save_message_to_db("assistant", response, model_name=selected_model, elapsed_time=elapsed_time, token_usage=response_tokens)
+                        st.write(f"⏱ **Time taken:** {elapsed_time:.2f} seconds")
+                        st.write(f"🔢 **Total tokens used (response only):** {response_tokens}")
+                        display_conversation_history()
+
 
     download_conversation_history()
 
