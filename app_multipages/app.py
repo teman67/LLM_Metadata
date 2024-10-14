@@ -10,7 +10,7 @@ from app_pages.page_register import registration_page
 from app_pages.page_LLM import *
 from app_pages.history import *
 from app_pages.page_json_viewer import *
-from app_pages.graph import graph_visualizer_page
+#from app_pages.graph import graph_visualizer_page
 
 app = MultiPage(app_name="MetaData Retrieval")  # Create an instance of the app
 
