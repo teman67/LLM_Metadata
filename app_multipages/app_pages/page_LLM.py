@@ -324,7 +324,7 @@ predefined_prompt = (
 )
 
 
-def main():
+def LLM_models():
     """
     Main function for the Streamlit app, handling user input, model selection, 
     and response generation.
