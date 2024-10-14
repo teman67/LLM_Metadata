@@ -443,7 +443,7 @@ def main():
                 st.warning("Please enter a question.")
             else:
                 
-                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{user_question_file}\n\nPlease answer in {language}."}]
+                api_messages = [{"role": "user", "content": f"File content: {st.session_state.file_content}\n\n{direct_question}\n\nPlease answer in {language}."}]
                 try:
 
                     result = query_api(messages=api_messages, model=selected_model, temperature=temperature, max_tokens=max_tokens, top_k=top_k, top_p=top_p)
