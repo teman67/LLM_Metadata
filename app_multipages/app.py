@@ -20,7 +20,7 @@ app.add_page("User Registration", registration_page)
 app.add_page("Explore Ollama Models", LLM_models)
 app.add_page("Chat History Overview", display_conversation_history)
 app.add_page("JSON File Viewer", json_viewer)
-app.add_page("Graph Visualizer", graph_visualizer_page)
+#app.add_page("Graph Visualizer", graph_visualizer_page)
 
 page_bg_img = '''
 <style>
