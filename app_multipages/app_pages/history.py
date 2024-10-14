@@ -36,6 +36,7 @@ class Conversation(Base):
     elapsed_time = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(microsecond=0))
     username = Column(String, nullable=False)  # Track conversations by user
+    conversation_id = Column(String, nullable=False)
 
 # Create the table if it doesn't exist, with error handling
 try:
