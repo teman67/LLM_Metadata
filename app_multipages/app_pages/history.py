@@ -93,15 +93,24 @@ def delete_conversation(conversation_id):
             # Delete the user message
             session.delete(user_message)
 
+            # # Find and delete the next assistant message (response) after the user's message
+            # assistant_message = session.query(Conversation).filter(
+            #     Conversation.timestamp > user_message.timestamp,  # Must be after the user message
+            #     Conversation.role == 'assistant',                 # Must be an assistant's message
+            #     Conversation.username == st.session_state.username  # Ensure ownership
+            # ).order_by(Conversation.timestamp.asc()).first()  # Get the next message chronologically
+
             # Find and delete the next assistant message (response) after the user's message
             assistant_message = session.query(Conversation).filter(
-                Conversation.timestamp > user_message.timestamp,  # Must be after the user message
-                Conversation.role == 'assistant',                 # Must be an assistant's message
+                Conversation.conversation_id == user_message.conversation_id,  # Same conversation
+                Conversation.role == 'assistant',  # Must be an assistant's message
                 Conversation.username == st.session_state.username  # Ensure ownership
-            ).order_by(Conversation.timestamp.asc()).first()  # Get the next message chronologically
+            ).first()  # Get the assistant message  # Get the next message chronologically  # Get the next message chronologically
+
 
             if assistant_message:
                 session.delete(assistant_message)
+            session.delete(user_message)
 
             session.commit()
             st.success("Message and response deleted successfully.")
