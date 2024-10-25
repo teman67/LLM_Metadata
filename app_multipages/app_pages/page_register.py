@@ -1,5 +1,6 @@
 import streamlit as st
-import hashlib  # For hashing passwords
+# import hashlib  # For hashing passwords
+from argon2 import PasswordHasher
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -75,8 +76,14 @@ def register_user(username, password, email):
     - False if the username or email already exists in the database.
     """
 
+    # Initialize PasswordHasher for Argon2id
+    ph = PasswordHasher()
+
     # Hash the password
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    hashed_password = ph.hash(password)
+
+    # Hash the password
+    # hashed_password = hashlib.sha256(password.encode()).hexdigest()
     
     # Get a session
     db = next(get_db())
