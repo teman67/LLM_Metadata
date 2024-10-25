@@ -1,7 +1,8 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-import hashlib
+# import hashlib
+from argon2 import PasswordHasher
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -73,10 +74,24 @@ def check_credentials(username, password):
     """
 
     """Check if the provided username and password are correct."""
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    # hashed_password = hashlib.sha256(password.encode()).hexdigest()
+     # Get a database session
     db = next(get_db())
-    user = db.query(User).filter(User.username == username, User.password == hashed_password).first()
-    return user is not None
+    
+    # Retrieve the user from the database by username
+    user = db.query(User).filter(User.username == username).first()
+    
+    # If user exists, verify the password
+    if user:
+        ph = PasswordHasher()
+        try:
+            # Verify the password against the stored hash
+            ph.verify(user.password, password)
+            return True
+        except Exception as e:
+            return False
+    
+    return False
 
 def login():
     """
